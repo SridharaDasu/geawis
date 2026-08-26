@@ -1,0 +1,11 @@
+*.txt
+*~
+*.log*
+*.swp*
+*.pyc
+__pycache__
+*.dump
+geawis
+geawis-csim
+geawis-cosim
+
