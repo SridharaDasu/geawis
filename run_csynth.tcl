@@ -3,11 +3,12 @@ if { [ info exists env(CMSSW_RELEASE_BASE) ] } {
 } else { 
     set CMSSW_RELEASE_BASE /cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2 
 }
+set cflags "-std=c++17 -I${CMSSW_RELEASE_BASE}/src"
 
 # open the project
-open_project -reset geawis
+open_project -reset geawis_csynth
 set_top geawis_stats
-add_files firmware/geawis.cpp -cflags "-std=c++14 -I${CMSSW_RELEASE_BASE}"
+add_files firmware/geawis.cpp -cflags "${cflags}"
 
 # reset the solution
 open_solution -reset "solution"
@@ -18,17 +19,5 @@ create_clock -period 2.3
 
 # synthethize the algorithm
 csynth_design
-
-# make ipbb structure and .dep file
-file mkdir geawis/firmware/hdl;
-file mkdir geawis/firmware/cfg;
-set f [open geawis/firmware/cfg/geawis.dep "a"];
-
-foreach filepath [glob -dir geawis/solution/impl/vhdl/ *] {
-  set filename [file tail $filepath];
-  file link ./geawis/firmware/hdl/$filename ../../solution/impl/vhdl/$filename;
-  puts $f "src -l geawis $filename"
-}
-close $f
 
 exit
