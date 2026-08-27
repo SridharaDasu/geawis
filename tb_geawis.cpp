@@ -21,6 +21,7 @@ int main() {
   std::uniform_int_distribution<unsigned int> distrib7FF(0, 0x7FF);
   std::uniform_int_distribution<unsigned int> distribFFF(0, 0xFFF);
   std::uniform_int_distribution<unsigned int> distrib3(0, 0x3);
+  std::uniform_int_distribution<unsigned int> distrib6(0, 0x3F);
     
   for (int iEvent=0; iEvent<NEVENTS; ++iEvent) {
     std::cout << "\n" << "Event " << iEvent << " Start" << std::endl;
@@ -34,14 +35,14 @@ int main() {
     lcl_stats.sum = 0;
     lcl_stats.maxval = 0;
     lcl_stats.minval = 0xFFF;
-    lcl_stats.sumaboveave = 0;
-    lcl_stats.sumbelowave = 0;
     pt2_t sumsq;
     for(int i=0; i<NPARTICLES; i++){
       particles[i].hwPt = distribFFF(gen);
       particles[i].hwEta = distribFFF(gen);
       particles[i].hwPhi = distrib7FF(gen);
       particles[i].pid.bits = distrib3(gen);
+      particles[i].reliso = distrib6(gen);
+      particles[i].shoshape = distrib6(gen);
       lcl_stats.sum += particles[i].hwPt;
       if (lcl_stats.maxval < particles[i].hwPt) lcl_stats.maxval = particles[i].hwPt;
       if (lcl_stats.minval > particles[i].hwPt) lcl_stats.minval = particles[i].hwPt;
@@ -52,8 +53,6 @@ int main() {
     pt2_t delsq = 0;
     for(int i=0; i<NPARTICLES; i++){
       delsq += (particles[i].hwPt - lcl_stats.average) * (particles[i].hwPt - lcl_stats.average);
-      if (lcl_stats.average > particles[i].hwPt) lcl_stats.sumbelowave += particles[i].hwPt;
-      if (lcl_stats.average <= particles[i].hwPt) lcl_stats.sumaboveave += particles[i].hwPt;
     }
     lcl_stats.variance = delsq / NPARTICLES;
     
@@ -73,10 +72,9 @@ int main() {
       std::cout << "Range (lcl, hls)= " << lcl_stats.range << "; " << hls_stats.range << std::endl;
     if (lcl_stats.variance != hls_stats.variance)
       std::cout << "Variance (lcl, hls)= " << lcl_stats.variance << "; " << hls_stats.variance << std::endl;
-    if (lcl_stats.sumaboveave != hls_stats.sumaboveave)
-      std::cout << "Sumaboveave (lcl, hls)= " << lcl_stats.sumaboveave << "; " << hls_stats.sumaboveave << std::endl;
-    if (lcl_stats.sumbelowave != hls_stats.sumbelowave)
-      std::cout << "Sumbelowave (lcl, hls)= " << lcl_stats.sumbelowave << "; " << hls_stats.sumbelowave << std::endl;
+
   }
+
   return 0;
+
 }

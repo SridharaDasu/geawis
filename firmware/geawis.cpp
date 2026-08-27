@@ -25,27 +25,19 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
   stats.maxval = 0;
   stats.minval = 0xFFF;
   stats.sum = 0;
+  pt2_t sumsq = 0;
   for(int i=0; i<NPARTICLES; ++i) {
     #pragma HLS unroll
     stats.sum += in_particles[i].hwPt;
+    sumsq += in_particles[i].hwPt * in_particles[i].hwPt;
     if (in_particles[i].hwPt > stats.maxval) stats.maxval = in_particles[i].hwPt;
     if (in_particles[i].hwPt < stats.minval) stats.minval = in_particles[i].hwPt;
   }
   stats.average = stats.sum >> NPARTICLES_POWER;
+  stats.variance = (sumsq >> NPARTICLES_POWER) - (stats.average * stats.average);
   stats.range = stats.maxval - stats.minval;
-  pt_t diff;
-  pt2_t diff2;
-  stats.sumaboveave = 0;
-  stats.sumbelowave = 0;
-  for(int i=0; i<NPARTICLES; ++i) {
-    #pragma HLS unroll
-    diff = in_particles[i].hwPt - stats.average;
-    diff2 += (diff * diff);
-    if (in_particles[i].hwPt > stats.average) stats.sumaboveave += in_particles[i].hwPt;
-    if (in_particles[i].hwPt <= stats.average) stats.sumbelowave += in_particles[i].hwPt;
-  }
-  stats.variance = diff2 >> NPARTICLES_POWER;
   
   token_q = token_d;
   return;
+
 }

@@ -14,27 +14,27 @@ using namespace l1ct;
 
 class Particle_T {
 public:
-    pt_t hwPt;
-    eta_t hwEta;
-    phi_t hwPhi;
-    ParticleID pid;
+  pt_t hwPt;
+  eta_t hwEta;
+  phi_t hwPhi;
+  ParticleID pid;
+  rel_iso_t reliso;
+  shower_shape_t shoshape;
 };
 
 struct Stats{
-    pt2_t sum;
-    pt_t average;
-    pt_t maxval;
-    pt_t minval;
-    pt_t range;
-    pt_t variance;
-    pt2_t sumaboveave;
-    pt2_t sumbelowave;
+  pt2_t sum;
+  pt_t average;
+  pt_t maxval;
+  pt_t minval;
+  pt_t range;
+  pt_t variance;
 };
 
 struct GEACtrlToken{
-    ap_uint<1> start_of_orbit;
-    bool dataValid;
-    bool frameValid;
+  ap_uint<1> start_of_orbit;
+  bool dataValid;
+  bool frameValid;
 };
 
 #endif
