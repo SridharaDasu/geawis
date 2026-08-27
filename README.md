@@ -15,9 +15,6 @@ The setup is trivial - it simply generates a dataset with random values distribu
 The first step is to set up correlator-common and get access to datatypes.h from CMSSW.
 
 ```
-git clone ssh://git@gitlab.cern.ch:7999/cms-cactus/phase2/firmware/correlator-common.git
-cd correlator-common
-source /cvmfs/cms.cern.ch/cmsset_default.sh
 git clone git@github.com:SridharaDasu/geawis.git
 cd geawis
 ```
@@ -26,6 +23,7 @@ cd geawis
 
 In this step we run csim using vitis
 ```
+source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
 vitis_hls -f run_csim.tcl "{nevents=1000}"
 ```
 
@@ -33,5 +31,6 @@ vitis_hls -f run_csim.tcl "{nevents=1000}"
 
 This generates the firmware RTL, which is to be used with the core framework to produce a bitfile
 ```
+source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
 vitis_hls -f run_csynth.tcl
 ```

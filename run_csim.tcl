@@ -1,4 +1,8 @@
-if { [ info exists env(CMSSW_RELEASE_BASE) ] } { set CMSSW_RELEASE_BASE $env(CMSSW_RELEASE_BASE) }
+if { [ info exists env(CMSSW_RELEASE_BASE) ] } { 
+    set CMSSW_RELEASE_BASE $env(CMSSW_RELEASE_BASE) 
+} else { 
+    set CMSSW_RELEASE_BASE /cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2 
+}
 
 array set opt {
   nevents    10
