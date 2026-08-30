@@ -18,18 +18,18 @@ any type of signal.
 Histograms from hllhc-z.root and minbias.root:
 
 <p align="center">
-    <img src="puppipt.gif" width="50%">
-    <img src="minbiaspt.gif" width="50%">
+    <img src="puppipt.gif" width="45%">
+    <img src="minbiaspt.gif" width="45%">
 </p>
 <p align="center">
-    <img src="puppieta.gif" width="50%">
-    <img src="minbiaseta.gif" width="50%">
+    <img src="puppieta.gif" width="45%">
+    <img src="minbiaseta.gif" width="45%">
 </p>
 <p align="center">
-    <img src="puppiphi.gif" width="50%">
-    <img src="minbiasphi.gif" width="50%">
+    <img src="puppiphi.gif" width="45%">
+    <img src="minbiasphi.gif" width="45%">
 </p>
 <p align="center">
-    <img src="puppipid.gif" width="50%">
-    <img src="minbiaspid.gif" width="50%">
+    <img src="puppipid.gif" width="45%">
+    <img src="minbiaspid.gif" width="45%">
 </p>
