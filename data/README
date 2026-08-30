@@ -1,0 +1,34 @@
+Setup of Exercise04 is similar to Exercise03
+Please follow the prior instructions for that.
+
+The files you use are the same as those in Exercise03.  I recommend
+you reuse the EventAnalysis.cc that you made for Exercise03 here.
+
+The vlhc-j.cards and vlhc-z.cards are setup to simulate proton-proton
+collisions at 100 TeV.  Notice that the program runs lot slower than
+the e+-e- case.  There are many more final state particles.  Notice
+that I had to setup a parton distribution function for this case as
+protons are not fundamental fermions.  The vlhc-j cards file choses
+QCD interactions with a minimum PT of 50 GeV.  These events have jets.
+The jets are available in EventData.h.
+
+To Do:
+
+1) Copy, build and run the program to obtain vlhc-j.root and vlhc-z.root files
+2) Examine the root file (following Exercise02) and check that RecoPhotonET
+   is properly displayed.  Notice how different it is from Exercise03
+3) Modify EventAnalysis.cc to find highest energy positively and negatively
+   charged muons (make TLorentzVectors of those), then add them and make the 
+   invariant mass of the combination using the existing method of the 
+   TLorentzVector class.  {PMuMu = PMuPlus+PMuMinus;  invMass = PMuMu.M();}
+4) Notice that the plot has a peak at MZ = 91 GeV and a tail which runs
+   significantly higher.
+5) Save the mu+mu- invariant mass plot to the file invMass.png 
+6) Make plots of PT of the highest, second, third and fourth highest PT
+   jets.  Although Pythia simulates 2-to-2 processes, there are several
+   jets in each event.  Why?
+7) Use hfac-h.cards file (from Exercise03) and see the invariant mass 
+   distribution of the  highest two PT jets.  Is there a structure, 
+   where you see a peak?   What is that particle?
+8) Is it possible to see a peak in the dijet distribution for the 
+   vlhc case for the same particle?
