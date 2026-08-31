@@ -6,6 +6,7 @@ using namespace l1ct;
 
 #include "ap_int.h"
 #include "ap_fixed.h"
+typedef ap_ufixed<34, 32, AP_TRN, AP_SAT> pt4_t;
 
 #include <hls_math.h>
 

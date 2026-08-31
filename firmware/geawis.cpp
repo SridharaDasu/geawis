@@ -1,6 +1,7 @@
 #include "geawis.h"
 #include <hls_math.h>
 #include <cassert>
+
 #ifndef __SYNTHESIS__
 #include <cstdio>
 #endif
@@ -25,16 +26,17 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
   stats.maxval = 0;
   stats.minval = 0xFFF;
   stats.sum = 0;
-  pt2_t sumsq = 0;
+  pt4_t sumsq = 0;
   for(int i=0; i<NPARTICLES; ++i) {
     #pragma HLS unroll
     stats.sum += in_particles[i].hwPt;
-    sumsq += in_particles[i].hwPt * in_particles[i].hwPt;
+    sumsq += (in_particles[i].hwPt * in_particles[i].hwPt);
     if (in_particles[i].hwPt > stats.maxval) stats.maxval = in_particles[i].hwPt;
     if (in_particles[i].hwPt < stats.minval) stats.minval = in_particles[i].hwPt;
   }
   stats.average = stats.sum >> NPARTICLES_POWER;
-  stats.variance = (sumsq >> NPARTICLES_POWER) - (stats.average * stats.average);
+  pt2_t avesq = stats.average * stats.average;
+  stats.variance = (sumsq - avesq) >> NPARTICLES_POWER;
   stats.range = stats.maxval - stats.minval;
   
   token_q = token_d;
