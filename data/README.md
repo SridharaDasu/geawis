@@ -23,7 +23,7 @@ generateData minbias.cards
 One can make plots using:
 
 ```
-root -l makePlots.cpp\(\'minbias.root\'\)
+root -b -l makePlots.cpp\(\"minbias.root\"\)
 ```
 
 The output of generateData program, using any of the <tag>.cards files are
@@ -37,18 +37,18 @@ any type of signal.
 Histograms from hllhc-z.root and minbias.root:
 
 <p align="center">
-    <img src="puppipt.gif" width="45%">
+    <img src="hllhc-z-PuppiPT.png" width="45%">
     <img src="minbias-PuppiPT.png" width="45%">
 </p>
 <p align="center">
-    <img src="puppieta.gif" width="45%">
+    <img src="hllhc-z-PuppiEta" width="45%">
     <img src="minbias-PuppiEta.png" width="45%">
 </p>
 <p align="center">
-    <img src="puppiphi.gif" width="45%">
+    <img src="hllhc-z-PuppiPhi.png" width="45%">
     <img src="minbias-PuppiPhi.png" width="45%">
 </p>
 <p align="center">
-    <img src="puppipid.gif" width="45%">
+    <img src="hllhc-z-PuppiPID.png" width="45%">
     <img src="minbias-PuppiPID.png" width="45%">
 </p>

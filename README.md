@@ -20,10 +20,11 @@ cd geawis
 
 ### 2. Run csim to verify that the testbench "simulation" agrees with the code used to make the "RTL".
 
-In this step we run csim using vitis. Compiling requires access to datatypes.h, which is in CMSSW area. If you are working on a machine with /cvmfs it should work fine. As for the access to Vitis / Vivado, you need to execute the local settings script. The example below works on Wisconsin lab machines.
+In this step we run csim using vitis. Compiling requires access to datatypes.h, which is in CMSSW area. If you are working on a machine with /cvmfs it should work fine. As for the access to Vitis / Vivado, you need to execute the local settings script. The example below works on Wisconsin lab machines. You could run with random input or with a file input. The data generation is in the subdirectory "data".
 ```
 source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
 vitis_hls -f run_csim.tcl "{nevents=1000}"
+vitis_hls -f run_csim.tcl "{nevents=1000, input=data/minbias.csv}"
 ```
 
 ### 3. Generate "RTL"

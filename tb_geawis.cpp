@@ -58,7 +58,7 @@ void getDataFromFile(Particle_T *particles) {
       >> particles[i].hwPhi >> comma
       >> particles[i].pid.bits >> comma
       >> particles[i].reliso >> comma
-      >> particles[i].shoshape >> std::endl;
+      >> particles[i].shoshape;
   }
 }
 
