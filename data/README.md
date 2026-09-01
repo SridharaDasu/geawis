@@ -41,7 +41,7 @@ Histograms from hllhc-z.root and minbias.root:
     <img src="minbias-PuppiPT.png" width="45%">
 </p>
 <p align="center">
-    <img src="hllhc-z-PuppiEta" width="45%">
+    <img src="hllhc-z-PuppiEta.png" width="45%">
     <img src="minbias-PuppiEta.png" width="45%">
 </p>
 <p align="center">
