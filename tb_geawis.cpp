@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include <random>
 #include <cmath>
@@ -7,6 +8,10 @@
 
 #ifndef NEVENTS
 #define NEVENTS 1
+#endif
+
+#ifndef INPUT
+#define INPUT "RANDOM"
 #endif
 
 // Setup random number generator
@@ -31,6 +36,32 @@ void getRandomParticles(Particle_T *particles) {
   
 }
 
+void getDataFromFile(Particle_T *particles) {
+  static bool first = true;
+  static std::ifstream difs;
+  if (first) {
+    difs.open(INPUT);
+    if (!difs.is_open()) {
+      std::cerr << "Failed to open " << INPUT << std::endl;
+      exit(1);
+    }
+    first = false;
+  }
+  unsigned int ievent, iparticle;
+  char comma;
+  for(unsigned int i = 0; i < NPARTICLES; i++) {
+    difs
+      >> ievent >> comma
+      >> iparticle >> comma
+      >> particles[i].hwPt >> comma
+      >> particles[i].hwEta >> comma
+      >> particles[i].hwPhi >> comma
+      >> particles[i].pid.bits >> comma
+      >> particles[i].reliso >> comma
+      >> particles[i].shoshape >> std::endl;
+  }
+}
+
 int main() {
 
   std::cout << "\n" <<"Start L1 GEA Testbench" << "\n" << std::endl;
@@ -39,7 +70,12 @@ int main() {
     std::cout << "\n" << "Event " << iEvent << " Start" << std::endl;
 
     Particle_T particles[NPARTICLES];
-    getRandomParticles(particles);
+    if (strcmp(INPUT, "RANDOM") == 0) {
+      getRandomParticles(particles);
+    }
+    else {
+      getDataFromFile(particles);
+    }
 
     GEACtrlToken token_d;
     GEACtrlToken token_q;
