@@ -38,17 +38,17 @@ Histograms from hllhc-z.root and minbias.root:
 
 <p align="center">
     <img src="puppipt.gif" width="45%">
-    <img src="minbiaspt.gif" width="45%">
+    <img src="minbias-PuppiPT.png" width="45%">
 </p>
 <p align="center">
     <img src="puppieta.gif" width="45%">
-    <img src="minbiaseta.gif" width="45%">
+    <img src="minbias-PuppiEta.png" width="45%">
 </p>
 <p align="center">
     <img src="puppiphi.gif" width="45%">
-    <img src="minbiasphi.gif" width="45%">
+    <img src="minbias-PuppiPhi.png" width="45%">
 </p>
 <p align="center">
     <img src="puppipid.gif" width="45%">
-    <img src="minbiaspid.gif" width="45%">
+    <img src="minbias-PuppiPID.png" width="45%">
 </p>
