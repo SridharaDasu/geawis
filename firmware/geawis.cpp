@@ -8,7 +8,8 @@
 
 void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToken token_d, GEACtrlToken& token_q) {
   
-  #pragma HLS pipeline
+  #pragma HLS pipeline II=54
+  #pragma HLS latency min=54
 
   #pragma HLS ARRAY_PARTITION variable=in_particles complete
 
@@ -22,17 +23,32 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
   #pragma HLS interface ap_none port=token_d
   #pragma HLS interface ap_none port=token_q
 
-  Proj_LOOP:
+  Proj_LOOP1:
   stats.maxval = 0;
   stats.minval = 0xFFF;
+  for(int i=0; i<NPARTICLES; ++i) {
+    #pragma HLS unroll
+    if (in_particles[i].hwPt > stats.maxval) stats.maxval = in_particles[i].hwPt;
+    if (in_particles[i].hwPt < stats.minval) stats.minval = in_particles[i].hwPt;
+  }
+  Proj_LOOP2:
   stats.sum = 0;
-  pt4_t sumsq = 0;
   for(int i=0; i<NPARTICLES; ++i) {
     #pragma HLS unroll
     stats.sum += in_particles[i].hwPt;
-    sumsq += (in_particles[i].hwPt * in_particles[i].hwPt);
-    if (in_particles[i].hwPt > stats.maxval) stats.maxval = in_particles[i].hwPt;
-    if (in_particles[i].hwPt < stats.minval) stats.minval = in_particles[i].hwPt;
+  }
+  Proj_LOOP3:
+  pt2_t ptsq[NPARTICLES];
+  #pragma HLS ARRAY_PARTITION variable=ptsq complete
+  for(int i=0; i<NPARTICLES; ++i) {
+    #pragma HLS unroll
+    ptsq[i] = (in_particles[i].hwPt * in_particles[i].hwPt);
+  }
+  Proj_LOOP4:
+  pt4_t sumsq = 0;
+  for(int i=0; i<NPARTICLES; ++i) {
+    #pragma HLS unroll
+    sumsq += ptsq[i];
   }
   stats.average = stats.sum >> NPARTICLES_POWER;
   pt2_t avesq = stats.average * stats.average;

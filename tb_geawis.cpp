@@ -7,7 +7,7 @@
 #include "firmware/geawis.h"
 
 #ifndef NEVENTS
-#define NEVENTS 1
+#define NEVENTS 1000
 #endif
 
 #ifndef INPUT
