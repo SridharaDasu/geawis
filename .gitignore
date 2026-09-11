@@ -1,3 +1,4 @@
+.*
 *.a
 *.txt
 *~
@@ -13,3 +14,4 @@ geawis_csim
 geawis_cosim
 geawis_csynth
 data/generateData
+topx
