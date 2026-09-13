@@ -8,7 +8,7 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
 #pragma HLS ARRAY_PARTITION variable=link_in complete dim=0
 #pragma HLS ARRAY_PARTITION variable=in_particles complete dim=0
   static bool newEvent = true;
-  static ap_uint<6> n_calls;
+  const ap_uint<6> *link_numbers;
   static ap_uint<6> counter[N_ACTIVE_INPUT_LINKS];
 #pragma HLS ARRAY_PARTITION variable=counter complete dim=0
   if (newEvent) {
@@ -16,23 +16,8 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
     for (int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
       counter[i] = 0;
     }
-    n_calls = 0;
-  }
-  // Determine the active link set
-  const ap_uint<6> *link_numbers;
-  if(n_calls < 6) {
     link_numbers = TM18_01;
   }
-  else if(n_calls < 12) {
-    link_numbers = TM18_07;
-  }
-  else if(n_calls < 18) {
-    link_numbers = TM18_13;
-  }
-  else {
-    // std::cerr << "processInputLinks: n_call = " << n_calls << "; should be < 18" << std::endl;
-  }
-  n_calls++;
   // Loop over active links to select the input data
   static ap_uint<64> mask = 0x0000000000001FFF;
   static ap_uint<64> selected_input[N_ACTIVE_INPUT_LINKS][N_OUT_CANDIDATES];
@@ -64,8 +49,17 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
 	ip++;
       }
     }
-    n_calls = 0;
     newEvent = false;
+    // Determine the active link set
+    if(link_numbers == TM18_01) {
+      link_numbers = TM18_07;
+    }
+    else if(link_numbers == TM18_07) {
+      link_numbers = TM18_13;
+    }
+    else if(link_numbers == TM18_13) {
+      link_numbers = TM18_01;
+    }
   }
 }
 
