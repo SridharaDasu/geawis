@@ -10,8 +10,10 @@ typedef ap_ufixed<34, 32, AP_TRN, AP_SAT> pt4_t;
 
 #include <hls_math.h>
 
-#define NPARTICLES_POWER 7
-#define NPARTICLES 128
+#include "algo_top.h"
+#include "topx.h"
+
+#define NPARTICLES (N_ACTIVE_INPUT_LINKS * N_OUT_CANDIDATES)
 
 class Particle_T {
 public:

@@ -50,9 +50,9 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
     #pragma HLS unroll
     sumsq += ptsq[i];
   }
-  stats.average = stats.sum >> NPARTICLES_POWER;
+  stats.average = stats.sum / NPARTICLES;
   pt2_t avesq = stats.average * stats.average;
-  stats.variance = (sumsq - avesq) >> NPARTICLES_POWER;
+  stats.variance = (sumsq - avesq) / NPARTICLES;
   stats.range = stats.maxval - stats.minval;
   
   token_q = token_d;

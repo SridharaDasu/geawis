@@ -15,3 +15,6 @@ geawis_cosim
 geawis_csynth
 data/generateData
 topx
+algo_top
+tb_topx
+tb_algo_top
