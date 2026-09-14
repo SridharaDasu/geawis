@@ -16,12 +16,12 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       std::cerr << "Failed to open " << fileName << std::endl;
       exit(1);
     }
+    std::string dummy;
+    std::getline(difs, dummy);
+    std::cout << "iEvent, iParticle, pt, eta, phi, pid, reliso, shoshape, eta, iActive, coded_value" << std::endl;
   }
   static ap_uint<64> full_link_data[N_ACTIVE_INPUT_LINKS][N_INP_CANDIDATES];
-  unsigned int ievent, iparticle;
-  char comma;
-  // Determine the active link set
-  static const ap_uint<6> *link_numbers = TM18_01;
+  static const ap_uint<6> *link_numbers = TM18_13;
   if(counter == 0) {
     // Determine the active link set
     if(link_numbers == TM18_01) {
@@ -38,56 +38,77 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       link_counts[i] = 0;
     }
     for(unsigned int i = 0; i < NPARTICLES; i++) {
-      Particle_T particle;
+      uint16_t ievent, iparticle, reliso, shoshape, pid;
+      float pt;
+      int ieta, iphi;
+      char comma;
       difs
-	>> ievent >> comma
-	>> iparticle >> comma
-	>> particle.hwPt >> comma
-	>> particle.hwEta >> comma
-	>> particle.hwPhi >> comma
-	>> particle.pid.bits >> comma
-	>> particle.reliso >> comma
-	>> particle.shoshape;
+        >> ievent >> comma
+        >> iparticle >> comma
+        >> pt >> comma
+        >> ieta >> comma
+        >> iphi >> comma
+        >> pid >> comma
+        >> reliso >> comma
+        >> shoshape;
+      pt_t hwPt = pt;
+      eta_t hwEta = ieta;
+      phi_t hwPhi = iphi;
       // Find the link id based on hwEta
+      float eta = Scales::floatEta(hwEta);
       int iActive;
-      float eta = Scales::floatEta(particle.hwEta);
       if (eta < -3.0) {
-	iActive = 10;
+        iActive = 10;
       }
       else if(eta < -2.5) {
-	iActive = 8;
+        iActive = 8;
       }
       else if(eta < -1.5) {
-	iActive = 6;
+        iActive = 6;
       }
       else if(eta < -1.0) {
-	iActive = 0;
+        iActive = 0;
       }
       else if(eta < -0.5) {
-	iActive = 1;
+        iActive = 1;
       }
       else if(eta < 0.0) {
-	iActive = 2;
+        iActive = 2;
       }
       else if(eta < 0.5) {
-	iActive = 3;
+        iActive = 3;
       }
       else if(eta < 1.0) {
-	iActive = 4;
+        iActive = 4;
       }
       else if(eta < 1.5) {
-	iActive = 5;
+        iActive = 5;
       }
       else if(eta < 2.5) {
-	iActive = 7;
+        iActive = 7;
       }
       else if(eta < 3.0) {
-	iActive = 9;
+        iActive = 9;
       }
       else if (eta >= 3.0 ) {
-	iActive = 11;
+        iActive = 11;
       }
-      ap_uint<64> coded_value = (particle.pid.bits << 34) + (particle.hwPhi << 24) + (particle.hwEta << 14) + particle.hwPt;
+      std::cout 
+        << event << ", "
+        << iparticle << ", "
+        << hwPt << ", "
+        << hwEta << ", "
+        << hwPhi << ", "
+        << pid << ", "
+        << reliso << ", "
+        << shoshape << ", "
+        << eta << ", "
+        << iActive << ",";
+      ap_uint<64> coded_value = hwPt;
+      coded_value.range(23, 14) = hwEta;
+      coded_value.range(33, 24) = hwPhi;
+      coded_value.range(49, 34) = pid;
+      std::cout << coded_value << std::endl;
       full_link_data[iActive][link_counts[iActive]] = coded_value;
       if(link_counts[iActive] < (N_INP_CANDIDATES - 1)) link_counts[iActive]++;
     }
@@ -114,11 +135,6 @@ int main(int argc, char** argv) {
     if (argc == 3) {
       fileInput = true;
       fileName = argv[2];
-      difs.open(fileName);
-      if (!difs.is_open()) {
-	std::cerr << "Failed to open " << fileName << std::endl;
-	exit(1);
-      }
     }
     // Setup random number generator
     static std::random_device rd;
@@ -129,21 +145,21 @@ int main(int argc, char** argv) {
     ap_uint<64> link_out[N_OUTPUT_LINKS];
     for (int event = 0; event < nevents; event++) {
       for (int counter = 0; counter < N_INP_CANDIDATES; counter++) {
-	if(fileInput) {
-	  getDataFromFile(fileName, event, counter, link_in);
-	}
-	else {
-	  for (int i = 0; i < N_INPUT_LINKS; i++) {
-	    link_in[i] = distrib(gen); // Use a random input
-	  }
-	}
-	for (int i = 0; i < N_OUTPUT_LINKS; i++) {
-	  link_out[i] = 0; // Zero the output links
-	}
-	algo_top(link_in, link_out);
+        if(fileInput) {
+          getDataFromFile(fileName, event, counter, link_in);
+        }
+        else {
+          for (int i = 0; i < N_INPUT_LINKS; i++) {
+            link_in[i] = distrib(gen); // Use a random input
+          }
+        }
+        for (int i = 0; i < N_OUTPUT_LINKS; i++) {
+          link_out[i] = 0; // Zero the output links
+        }
+        algo_top(link_in, link_out);
       }
       for (int i = 0; i < N_OUTPUT_LINKS; i++) {
-	std::cout << "Event = " << event << "; Output = " << std::hex << link_out[i] << std::dec << std::endl;
+        std::cout << "Event = " << event << "; Output = " << std::hex << link_out[i] << std::dec << std::endl;
       }
     }
   } catch (const std::exception& e) {

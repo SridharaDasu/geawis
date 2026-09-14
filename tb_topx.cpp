@@ -18,10 +18,10 @@ int main(int argc, char** argv) {
       unsigned int value = stream[c];
       counter = get_topx(counter, value, result);
       if ((counter % N_INP_CANDIDATES) == 0) {
-	std::cout << "Reached N calls! The top X numbers are: ";
-	for (int i = 0; i < N_OUT_CANDIDATES ; i++) std::cout << result[i] << " "; std::cout << std::endl;
+        std::cout << "Reached N calls! The top X numbers are: ";
+        for (int i = 0; i < N_OUT_CANDIDATES ; i++) std::cout << result[i] << " "; std::cout << std::endl;
       } else {
-	std::cout << "Processed " << c << " " << counter << " = " << value << ", waiting for " << N_INP_CANDIDATES << " calls..." << std::endl;
+        std::cout << "Processed " << c << " " << counter << " = " << value << ", waiting for " << N_INP_CANDIDATES << " calls..." << std::endl;
       }
     }
   } catch (const std::exception& e) {

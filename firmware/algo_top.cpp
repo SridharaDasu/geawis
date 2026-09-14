@@ -41,12 +41,12 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
 #pragma HLS UNROLL
       for (int j = 0; j < N_OUT_CANDIDATES; j++) {
 #pragma HLS UNROLL
-	ap_uint<64> value = selected_input[i][j];
-	in_particles[ip].hwPt = value & 0x3FFF;
-	in_particles[ip].hwEta = (value >> 14) & 0x3FF;
-	in_particles[ip].hwPhi = (value >> 24) & 0x3FF;
-	in_particles[ip].pid.bits = (value >> 34) & 0x3;
-	ip++;
+        ap_uint<64> value = selected_input[i][j];
+        in_particles[ip].hwPt = value & 0x3FFF;
+        in_particles[ip].hwEta = (value >> 14) & 0x3FF;
+        in_particles[ip].hwPhi = (value >> 24) & 0x3FF;
+        in_particles[ip].pid.bits = (value >> 34) & 0x3;
+        ip++;
       }
     }
     newEvent = false;
@@ -89,13 +89,13 @@ void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_
     geawis_stats(in_particles, stats, d, q);
     /*
     std::cout << "algo_top::counter = " << counter << "; stats = ("
-	      << stats.sum << ", "
-	      << stats.average << ", "
-	      << stats.maxval << ", "
-	      << stats.minval << ", "
-	      << stats. range << ", "
-	      << stats.variance << ")"
-	      << std::endl;
+              << stats.sum << ", "
+              << stats.average << ", "
+              << stats.maxval << ", "
+              << stats.minval << ", "
+              << stats. range << ", "
+              << stats.variance << ")"
+              << std::endl;
     */
     processOutputLinks(stats, link_out);
     counter = 0;

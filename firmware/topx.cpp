@@ -13,8 +13,8 @@ void sortDescending(ap_uint<64> array[], int size, ap_uint<64> mask) {
 
     // Move elements that are smaller than value to one position ahead
     while (j >= 0 && ((array[j] & mask) < (value & mask))) {
-	array[j + 1] = array[j];
-	j = j - 1;
+        array[j + 1] = array[j];
+        j = j - 1;
       }
       array[j + 1] = value;
       }
