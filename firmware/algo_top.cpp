@@ -8,7 +8,7 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
 #pragma HLS ARRAY_PARTITION variable=link_in complete dim=0
 #pragma HLS ARRAY_PARTITION variable=in_particles complete dim=0
   static bool newEvent = true;
-  const ap_uint<6> *link_numbers;
+  static const ap_uint<6> *link_numbers = TM18_01;
   static ap_uint<6> counter[N_ACTIVE_INPUT_LINKS];
 #pragma HLS ARRAY_PARTITION variable=counter complete dim=0
   if (newEvent) {
@@ -16,7 +16,6 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
     for (int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
       counter[i] = 0;
     }
-    link_numbers = TM18_01;
   }
   // Loop over active links to select the input data
   static ap_uint<64> mask = 0x0000000000001FFF;
@@ -42,10 +41,10 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
       for (int j = 0; j < N_OUT_CANDIDATES; j++) {
 #pragma HLS UNROLL
         ap_uint<64> value = selected_input[i][j];
-        in_particles[ip].hwPt = value & 0x3FFF;
-        in_particles[ip].hwEta = (value >> 14) & 0x3FF;
-        in_particles[ip].hwPhi = (value >> 24) & 0x3FF;
-        in_particles[ip].pid.bits = (value >> 34) & 0x3;
+        in_particles[ip].hwPt = value.range(13, 0);
+        in_particles[ip].hwEta = value.range(23, 14);
+        in_particles[ip].hwPhi = value.range(33, 24);
+        in_particles[ip].pid.bits = value.range(35, 34);
         ip++;
       }
     }
@@ -68,7 +67,12 @@ void processOutputLinks(Stats &stats, ap_uint<64> link_out[N_OUTPUT_LINKS]) {
 #pragma HLS PIPELINE
   for (int i = 0; i < N_OUTPUT_LINKS; i++) {
 #pragma HLS UNROLL
-    link_out[i] = (stats.average) | (stats.maxval << 16) | (stats.minval << 32) | (stats.variance << 48);
+    ap_uint<64> packed = 0;
+    packed.range(15, 0) = stats.average;
+    packed.range(31, 16) = stats.maxval;
+    packed.range(47, 32) = stats.minval;
+    packed.range(63, 48) = stats.variance;
+    link_out[i] = packed;
   }
 }
 
@@ -87,16 +91,6 @@ void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_
   counter++;
   if(counter == N_INP_CANDIDATES) {
     geawis_stats(in_particles, stats, d, q);
-    /*
-    std::cout << "algo_top::counter = " << counter << "; stats = ("
-              << stats.sum << ", "
-              << stats.average << ", "
-              << stats.maxval << ", "
-              << stats.minval << ", "
-              << stats. range << ", "
-              << stats.variance << ")"
-              << std::endl;
-    */
     processOutputLinks(stats, link_out);
     counter = 0;
   }

@@ -3,14 +3,16 @@
 #include <cassert>
 #include <random>
 #include <cmath>
+#include <iomanip>
 
 #include "firmware/data.h"
 #include "firmware/topx.h"
 #include "firmware/algo_top.h"
 
 void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> link_in[N_INPUT_LINKS]) {
-  static std::ifstream difs;  
-  if (event = 0) {
+  static std::ifstream difs;
+  static bool first = true;
+  if (first) {
     difs.open(fileName);
     if (!difs.is_open()) {
       std::cerr << "Failed to open " << fileName << std::endl;
@@ -18,21 +20,11 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
     }
     std::string dummy;
     std::getline(difs, dummy);
-    std::cout << "iEvent, iParticle, pt, eta, phi, pid, reliso, shoshape, eta, iActive, coded_value" << std::endl;
+    first = false;
   }
   static ap_uint<64> full_link_data[N_ACTIVE_INPUT_LINKS][N_INP_CANDIDATES];
-  static const ap_uint<6> *link_numbers = TM18_13;
+  static const ap_uint<6> *link_numbers = TM18_01;
   if(counter == 0) {
-    // Determine the active link set
-    if(link_numbers == TM18_01) {
-      link_numbers = TM18_07;
-    }
-    else if(link_numbers == TM18_07) {
-      link_numbers = TM18_13;
-    }
-    else if(link_numbers == TM18_13) {
-      link_numbers = TM18_01;
-    }
     int link_counts[N_ACTIVE_INPUT_LINKS];
     for(int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
       link_counts[i] = 0;
@@ -93,22 +85,10 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       else if (eta >= 3.0 ) {
         iActive = 11;
       }
-      std::cout 
-        << event << ", "
-        << iparticle << ", "
-        << hwPt << ", "
-        << hwEta << ", "
-        << hwPhi << ", "
-        << pid << ", "
-        << reliso << ", "
-        << shoshape << ", "
-        << eta << ", "
-        << iActive << ",";
       ap_uint<64> coded_value = hwPt;
       coded_value.range(23, 14) = hwEta;
       coded_value.range(33, 24) = hwPhi;
       coded_value.range(49, 34) = pid;
-      std::cout << coded_value << std::endl;
       full_link_data[iActive][link_counts[iActive]] = coded_value;
       if(link_counts[iActive] < (N_INP_CANDIDATES - 1)) link_counts[iActive]++;
     }
@@ -118,6 +98,17 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
   }
   for (int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
     link_in[link_numbers[i]] = full_link_data[i][counter];
+  }
+  if (counter == N_INP_CANDIDATES - 1) {
+    if(link_numbers == TM18_01) {
+      link_numbers = TM18_07;
+    }
+    else if(link_numbers == TM18_07) {
+      link_numbers = TM18_13;
+    }
+    else if(link_numbers == TM18_13) {
+      link_numbers = TM18_01;
+    }
   }
   return;
 }
@@ -159,7 +150,17 @@ int main(int argc, char** argv) {
         algo_top(link_in, link_out);
       }
       for (int i = 0; i < N_OUTPUT_LINKS; i++) {
-        std::cout << "Event = " << event << "; Output = " << std::hex << link_out[i] << std::dec << std::endl;
+        pt_t average = link_out[i].range(13, 0);
+        pt_t maximum = link_out[i].range(29, 16);
+        pt_t minimum = link_out[i].range(45, 32);
+        pt_t variance = link_out[i].range(61, 48);
+        std::cout << "Event = " << event
+                  << "; raw = " << std::hex << link_out[i]
+                  << "; average = " << std::dec << average
+                  << "; max = " << maximum
+                  << "; min = " << minimum
+                  << "; variance = " << variance
+                  << std::endl;
       }
     }
   } catch (const std::exception& e) {
