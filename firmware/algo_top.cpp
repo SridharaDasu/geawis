@@ -4,19 +4,16 @@
 #include "data.h"
 #include "geawis.h"
 
-void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particles[NPARTICLES]) {
+void processInputLinks(
+  const ap_uint<6> link_numbers[N_ACTIVE_INPUT_LINKS],
+  ap_uint<64> link_in[N_INPUT_LINKS], 
+  Particle_T in_particles[NPARTICLES]
+) {
 #pragma HLS ARRAY_PARTITION variable=link_in complete dim=0
 #pragma HLS ARRAY_PARTITION variable=in_particles complete dim=0
-  static bool newEvent = true;
-  static const ap_uint<6> *link_numbers = TM18_01;
-  static ap_uint<6> counter[N_ACTIVE_INPUT_LINKS];
+#pragma HLS ARRAY_PARTITION variable=link_numbers complete dim=0
+  static ap_uint<6> counter[N_ACTIVE_INPUT_LINKS] = {};
 #pragma HLS ARRAY_PARTITION variable=counter complete dim=0
-  if (newEvent) {
-    newEvent = false;
-    for (int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
-      counter[i] = 0;
-    }
-  }
   // Loop over active links to select the input data
   static ap_uint<64> mask = 0x0000000000001FFF;
   static ap_uint<64> selected_input[N_ACTIVE_INPUT_LINKS][N_OUT_CANDIDATES];
@@ -25,15 +22,9 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
 #pragma HLS UNROLL
     ap_uint<64> value = link_in[link_numbers[i]];
     counter[i] = get_topx(counter[i], value, selected_input[i], mask);
-    if (newEvent && counter[i] != 0) {
-      // std::cerr << "processInputLinks: counter for " << i << " is not zero as it should be" << std::endl;
-      counter[i] = 0;
-    }
-    else {
-      if (counter[i] == 0 ) newEvent = true;
-    }
   }
-  if (newEvent) {
+
+  if (counter[0] == 0) {
     // Write code to steal data from 64-bit input to particle data as in the document from Gianluca
     unsigned int ip = 0;
     for(int i = 0; i < N_ACTIVE_INPUT_LINKS; ++i) {
@@ -48,17 +39,7 @@ void processInputLinks(ap_uint<64> link_in[N_INPUT_LINKS], Particle_T in_particl
         ip++;
       }
     }
-    newEvent = false;
-    // Determine the active link set
-    if(link_numbers == TM18_01) {
-      link_numbers = TM18_07;
-    }
-    else if(link_numbers == TM18_07) {
-      link_numbers = TM18_13;
-    }
-    else if(link_numbers == TM18_13) {
-      link_numbers = TM18_01;
-    }
+
   }
 }
 
@@ -84,15 +65,35 @@ void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_
 
   Particle_T in_particles[NPARTICLES];
   Stats stats;
-  GEACtrlToken d;
-  GEACtrlToken q;
-  static ap_uint<6> counter = 0;
-  processInputLinks(link_in, in_particles);
-  counter++;
-  if(counter == N_INP_CANDIDATES) {
+  GEACtrlToken d = {0, true, true};
+  GEACtrlToken q = {0, false, false};
+  static ap_uint<6> clock_tick = 0;
+  static ap_uint<6> tm18_counter = 1;
+
+  if (tm18_counter == 1) {
+    processInputLinks(TM18_01, link_in, in_particles);
+  }
+  if (tm18_counter == 6) {
+    processInputLinks(TM18_07, link_in, in_particles);
+  }
+  if (tm18_counter == 13) {
+    processInputLinks(TM18_13, link_in, in_particles);
+  }
+
+  clock_tick++;
+  if (clock_tick == N_INP_CANDIDATES) {
     geawis_stats(in_particles, stats, d, q);
     processOutputLinks(stats, link_out);
-    counter = 0;
+    clock_tick = 0;
+    if (tm18_counter == 1) {
+      tm18_counter = 6;
+    }
+    else if (tm18_counter == 6) {
+      tm18_counter = 13;
+    }
+    else {
+      tm18_counter = 1;
+    }
   }
   else {
     for (int i = 0; i < N_OUTPUT_LINKS; i++) {

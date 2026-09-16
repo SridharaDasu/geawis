@@ -95,7 +95,7 @@ int main() {
     lcl_stats.average = lcl_stats.sum / NPARTICLES;
     lcl_stats.range = lcl_stats.maxval - lcl_stats.minval;
     pt2_t avesq = lcl_stats.average * lcl_stats.average;
-    lcl_stats.variance = (sumsq - avesq) >> NPARTICLES_POWER;
+    lcl_stats.variance = (sumsq / NPARTICLES) - avesq;
     
     // HLS Stats Calculation
     Stats hls_stats;

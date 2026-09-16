@@ -131,7 +131,13 @@ int main(int argc, char** argv) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     // Select uniformly distributed generators for the relevant ranges 
-    static std::uniform_int_distribution<unsigned int> distrib(0, 1000000);
+    // 1. Define your desired target mean and standard deviation for the final output
+    double target_mean = 100.0;
+    double target_sd = 10.0;
+    // 2. Convert target mean and SD to the underlying log-scale parameters (mu and sigma)
+    double sigma = std::sqrt(std::log(1.0 + (target_sd * target_sd) / (target_mean * target_mean)));
+    double mu = std::log(target_mean) - (sigma * sigma) / 2.0;
+    static std::lognormal_distribution<double> distrib(mu, sigma); // LogNormal distribution with mean 0 and stddev 1
     ap_uint<64> link_in[N_INPUT_LINKS];
     ap_uint<64> link_out[N_OUTPUT_LINKS];
     for (int event = 0; event < nevents; event++) {
@@ -141,7 +147,7 @@ int main(int argc, char** argv) {
         }
         else {
           for (int i = 0; i < N_INPUT_LINKS; i++) {
-            link_in[i] = distrib(gen); // Use a random input
+            link_in[i] = ap_uint<64> (distrib(gen)); // Use a random input
           }
         }
         for (int i = 0; i < N_OUTPUT_LINKS; i++) {

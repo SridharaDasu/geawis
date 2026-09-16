@@ -52,7 +52,8 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
   }
   stats.average = stats.sum / NPARTICLES;
   pt2_t avesq = stats.average * stats.average;
-  stats.variance = (sumsq - avesq) / NPARTICLES;
+  pt4_t meansq = sumsq / NPARTICLES;
+  stats.variance = meansq - avesq;
   stats.range = stats.maxval - stats.minval;
   
   token_q = token_d;

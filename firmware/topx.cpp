@@ -8,7 +8,7 @@
 void sortDescending(ap_uint<64> array[], int size, ap_uint<64> mask) {
   // Loop bounds must be static/constant for hardware unrolling
   for (int i = 1; i < size; i++) {
-    unsigned int value = array[i];
+    ap_uint<64> value = array[i];
     int j = i - 1;
 
     // Move elements that are smaller than value to one position ahead
@@ -29,11 +29,15 @@ unsigned int get_topx(ap_uint<6> call_num, ap_uint<64> value, ap_uint<64> result
   if (call_num < N_OUT_CANDIDATES) {
     result[call_num] = value;
   }
-  else {
+  else if (call_num < (N_INP_CANDIDATES - 1)) {
     sortDescending(result, N_OUT_CANDIDATES, mask);
-    if (value > result[N_OUT_CANDIDATES - 1]) {
+    if ((value & mask) > (result[N_OUT_CANDIDATES - 1] & mask)) {
       result[N_OUT_CANDIDATES - 1] = value;
+      sortDescending(result, N_OUT_CANDIDATES, mask);
     }
+  }
+  else if ((value & mask) > (result[N_OUT_CANDIDATES - 1] & mask)) {
+    result[N_OUT_CANDIDATES - 1] = value;
   }
   if (call_num == (N_INP_CANDIDATES - 1)) {
     call_num = 0;

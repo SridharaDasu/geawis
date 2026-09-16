@@ -1,4 +1,6 @@
 #include <random>
+#include <iostream>
+#include <iomanip>
 #include "firmware/topx.h"
 
 int main(int argc, char** argv) {
@@ -7,12 +9,12 @@ int main(int argc, char** argv) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     // Select uniformly distributed generators for the relevant ranges 
-    static std::uniform_int_distribution<unsigned int> distrib(0, 1000000);
+    static std::uniform_int_distribution<unsigned int> distrib(0, 0x1FFF);
     std::vector<unsigned int> stream;
     for (int i = 0; i < (N_INP_CANDIDATES * 10); i++) {
       stream.push_back(distrib(gen));
     }
-    unsigned int result[N_OUT_CANDIDATES];
+    ap_uint<64> result[N_OUT_CANDIDATES];
     unsigned int counter = 0;
     for (int c = 0; c < stream.size(); c++) {
       unsigned int value = stream[c];
