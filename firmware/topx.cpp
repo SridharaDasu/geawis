@@ -26,6 +26,7 @@ void sortDescending(ap_uint<64> array[], int size, ap_uint<64> mask) {
 // Returns updated call number
 
 unsigned int get_topx(ap_uint<6> call_num, ap_uint<64> value, ap_uint<64> result[N_OUT_CANDIDATES], ap_uint<64> mask) {
+#pragma HLS PIPELINE II=1
   if (call_num < N_OUT_CANDIDATES) {
     result[call_num] = value;
   }

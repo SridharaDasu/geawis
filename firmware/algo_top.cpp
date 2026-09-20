@@ -45,7 +45,7 @@ void processInputLinks(
 
 void processOutputLinks(Stats &stats, ap_uint<64> link_out[N_OUTPUT_LINKS]) {
 #pragma HLS ARRAY_PARTITION variable=link_out complete dim=0
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE II=1
   for (int i = 0; i < N_OUTPUT_LINKS; i++) {
 #pragma HLS UNROLL
     ap_uint<64> packed = 0;
@@ -60,7 +60,7 @@ void processOutputLinks(Stats &stats, ap_uint<64> link_out[N_OUTPUT_LINKS]) {
 void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_LINKS]){
 #pragma HLS ARRAY_PARTITION variable=link_in complete dim=0
 #pragma HLS ARRAY_PARTITION variable=link_out complete dim=0
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE II=1
 #pragma HLS INTERFACE ap_ctrl_hs port=return
 
   Particle_T in_particles[NPARTICLES];

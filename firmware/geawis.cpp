@@ -9,7 +9,6 @@
 void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToken token_d, GEACtrlToken& token_q) {
   
   #pragma HLS pipeline II=54
-  #pragma HLS latency min=54
 
   #pragma HLS ARRAY_PARTITION variable=in_particles complete
 

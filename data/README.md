@@ -27,7 +27,7 @@ root -b -l makePlots.cpp\(\"minbias.root\"\)
 ```
 
 The output of generateData program, using any of the <tag>.cards files are
-the files <tag>.csv with 128  puppi candidates per event and <tag>.root
+the files <tag>.csv with 144  puppi candidates per event and <tag>.root
 with histograms of those quantities.
 
 You can use minbias data to learn about the backgrounds. Hopefully, the
@@ -37,18 +37,22 @@ any type of signal.
 Histograms from hllhc-z.root and minbias.root:
 
 <p align="center">
-    <img src="hllhc-z-PuppiPT.png" width="45%">
-    <img src="minbias-PuppiPT.png" width="45%">
+    <img src="ttbar-PuppiPT.png" width="30%">
+    <img src="hllhc-z-PuppiPT.png" width="30%">
+    <img src="minbias-PuppiPT.png" width="30%">
 </p>
 <p align="center">
-    <img src="hllhc-z-PuppiEta.png" width="45%">
-    <img src="minbias-PuppiEta.png" width="45%">
+    <img src="ttbar-PuppiEta.png" width="30%">
+    <img src="hllhc-z-PuppiEta.png" width="30%">
+    <img src="minbias-PuppiEta.png" width="30%">
 </p>
 <p align="center">
-    <img src="hllhc-z-PuppiPhi.png" width="45%">
-    <img src="minbias-PuppiPhi.png" width="45%">
+    <img src="ttbar-PuppiPhi.png" width="30%">
+    <img src="hllhc-z-PuppiPhi.png" width="30%">
+    <img src="minbias-PuppiPhi.png" width="30%">
 </p>
 <p align="center">
-    <img src="hllhc-z-PuppiPID.png" width="45%">
-    <img src="minbias-PuppiPID.png" width="45%">
+    <img src="ttbar-PuppiPID.png" width="30%">
+    <img src="hllhc-z-PuppiPID.png" width="30%">
+    <img src="minbias-PuppiPID.png" width="30%">
 </p>
