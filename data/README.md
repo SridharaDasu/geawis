@@ -34,7 +34,7 @@ You can use minbias data to learn about the backgrounds. Hopefully, the
 anomaly detection algorithm can be used to distinguish the backgrounds from
 any type of signal.
 
-Histograms from hllhc-z.root and minbias.root:
+Histograms from ttbar.root, hllhc-z.root and minbias.root:
 
 <p align="center">
     <img src="ttbar-PuppiPT.png" width="30%">

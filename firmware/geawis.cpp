@@ -24,7 +24,7 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
 
   Proj_LOOP1:
   stats.maxval = 0;
-  stats.minval = 0xFFF;
+  stats.minval = 0x3FFF;
   for(int i=0; i<NPARTICLES; ++i) {
     #pragma HLS unroll
     if (in_particles[i].hwPt > stats.maxval) stats.maxval = in_particles[i].hwPt;

@@ -29,7 +29,7 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
     for(int i = 0; i < N_ACTIVE_INPUT_LINKS; i++) {
       link_counts[i] = 0;
     }
-    for(unsigned int i = 0; i < NPARTICLES; i++) {
+    for(unsigned int i = 0; i < N_ACTIVE_INPUT_LINKS * N_INP_CANDIDATES; i++) {
       uint16_t ievent, iparticle, reliso, shoshape, pid;
       float pt;
       int ieta, iphi;
@@ -48,7 +48,7 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       phi_t hwPhi = iphi;
       // Find the link id based on hwEta
       float eta = Scales::floatEta(hwEta);
-      int iActive;
+      int iActive = 0;
       if (eta < -3.0) {
         iActive = 10;
       }
@@ -85,10 +85,11 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       else if (eta >= 3.0 ) {
         iActive = 11;
       }
-      ap_uint<64> coded_value = hwPt;
+      ap_int<64> coded_value = 0;
+      coded_value.range(13, 0) = hwPt.to_ap_int();
       coded_value.range(23, 14) = hwEta;
       coded_value.range(33, 24) = hwPhi;
-      coded_value.range(49, 34) = pid;
+      coded_value.range(36, 34) = pid;
       full_link_data[iActive][link_counts[iActive]] = coded_value;
       if(link_counts[iActive] < (N_INP_CANDIDATES - 1)) link_counts[iActive]++;
     }
@@ -138,10 +139,11 @@ int main(int argc, char** argv) {
     double sigma = std::sqrt(std::log(1.0 + (target_sd * target_sd) / (target_mean * target_mean)));
     double mu = std::log(target_mean) - (sigma * sigma) / 2.0;
     static std::lognormal_distribution<double> distrib(mu, sigma); // LogNormal distribution with mean 0 and stddev 1
-    ap_uint<64> link_in[N_INPUT_LINKS];
-    ap_uint<64> link_out[N_OUTPUT_LINKS];
+    ap_uint<64> link_in[N_INPUT_LINKS] = {};
+    ap_uint<64> link_out[N_OUTPUT_LINKS] = {};
     for (int event = 0; event < nevents; event++) {
       for (int counter = 0; counter < N_INP_CANDIDATES; counter++) {
+        for (int i = 0; i < N_INPUT_LINKS; i++) link_in[i] = 0;
         if(fileInput) {
           getDataFromFile(fileName, event, counter, link_in);
         }
@@ -157,9 +159,9 @@ int main(int argc, char** argv) {
       }
       for (int i = 0; i < N_OUTPUT_LINKS; i++) {
         pt_t average = link_out[i].range(13, 0);
-        pt_t maximum = link_out[i].range(29, 16);
-        pt_t minimum = link_out[i].range(45, 32);
-        pt_t variance = link_out[i].range(61, 48);
+        pt_t maximum = link_out[i].range(27, 14);
+        pt_t minimum = link_out[i].range(41, 28);
+        pt_t variance = link_out[i].range(55, 42);
         std::cout << "Event = " << event
                   << "; raw = " << std::hex << link_out[i]
                   << "; average = " << std::dec << average
