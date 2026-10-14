@@ -37,21 +37,20 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
     stats.sum += in_particles[i].hwPt;
   }
   Proj_LOOP3:
-  pt2_t ptsq[NPARTICLES];
-  #pragma HLS ARRAY_PARTITION variable=ptsq complete
+  // Preserve pt4_t's two fractional bits and factor 144 into 16 * 9.
+  ap_uint<34> sumsq_raw = 0;
   for(int i=0; i<NPARTICLES; ++i) {
     #pragma HLS unroll
-    ptsq[i] = (in_particles[i].hwPt * in_particles[i].hwPt);
-  }
-  Proj_LOOP4:
-  pt4_t sumsq = 0;
-  for(int i=0; i<NPARTICLES; ++i) {
-    #pragma HLS unroll
-    sumsq += ptsq[i];
+    ap_uint<14> pt_raw = in_particles[i].hwPt.range();
+    ap_uint<28> pt_square_raw = pt_raw * pt_raw;
+    sumsq_raw += pt_square_raw >> 2;
   }
   stats.average = stats.sum / NPARTICLES;
   pt2_t avesq = stats.average * stats.average;
-  pt4_t meansq = sumsq / NPARTICLES;
+  ap_uint<30> sumsq_div_16 = sumsq_raw >> 4;
+  ap_uint<30> meansq_raw = sumsq_div_16 / 9;
+  pt4_t meansq = 0;
+  meansq.range() = meansq_raw;
   stats.variance = meansq - avesq;
   stats.range = stats.maxval - stats.minval;
   

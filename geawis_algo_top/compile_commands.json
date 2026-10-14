@@ -1,0 +1,50 @@
+[
+  {
+    "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
+    "arguments": [
+      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "-fhls",
+      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
+      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-c",
+      "/nfs_scratch/dasu/2026-08/geawis/firmware/topx.cpp"
+    ],
+    "file": "/nfs_scratch/dasu/2026-08/geawis/firmware/topx.cpp"
+  },
+  {
+    "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
+    "arguments": [
+      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "-fhls",
+      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
+      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-c",
+      "/nfs_scratch/dasu/2026-08/geawis/firmware/geawis.cpp"
+    ],
+    "file": "/nfs_scratch/dasu/2026-08/geawis/firmware/geawis.cpp"
+  },
+  {
+    "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
+    "arguments": [
+      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "-fhls",
+      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
+      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-c",
+      "/nfs_scratch/dasu/2026-08/geawis/firmware/algo_top.cpp"
+    ],
+    "file": "/nfs_scratch/dasu/2026-08/geawis/firmware/algo_top.cpp"
+  },
+  {
+    "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
+    "arguments": [
+      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "-fhls-tb",
+      "-hls-sim-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/include",
+      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-c",
+      "/nfs_scratch/dasu/2026-08/geawis/tb_algo_top.cpp"
+    ],
+    "file": "/nfs_scratch/dasu/2026-08/geawis/tb_algo_top.cpp"
+  }
+]

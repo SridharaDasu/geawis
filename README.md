@@ -27,7 +27,7 @@ The block `algo_top:processInputLinks` first selects one of above three sets of 
 
 Since `algo_top` gets input data every clock-tick of 360 MHz clock, it gets 9 64-bit candidates in one LHC bunch crossing, i.e., 9x6=54 candidates in the TM6 time interval. Total count of objects received aggregated over all 12 active links are 54x12 = 648.
 
-However, this may be too much data to process in subsequent algorithms. The second part of ``processInputLinks`` calls ``sortDescending`` to reduce the pupi candidate list down to 12x12 = 144. (Note that the ``deregionizer`` implemented by the CL2 team reduced even more to 128 candidates).
+For each TM6 interval, the second part of ``processInputLinks`` keeps the 12 highest-pT candidates from each of the 12 selected links, reducing the list to 12x12 = 144 particles. The selected link group rotates among TM18_01, TM18_07 and TM18_13 on successive 54-cycle intervals. (Note that the ``deregionizer`` implemented by the CL2 team reduced even more to 128 candidates).
 
 The main algorithm playground to process puppi candidates is `geawis`
 
@@ -54,6 +54,10 @@ In this step we run csim using vitis. Compiling requires access to datatypes.h, 
 source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
 vitis_hls -f run_csim.tcl "{nevents=1000}"
 vitis_hls -f run_csim.tcl "{nevents=1000, input=data/minbias.csv}"
+```
+To directly test the fixed-point statistics against the software reference, run:
+```
+vitis-run --mode hls --tcl run_csim_geawis.tcl
 ```
 
 ### 3. Generate "RTL"

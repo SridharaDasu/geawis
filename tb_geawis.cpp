@@ -111,8 +111,10 @@ int main() {
       std::cerr << "Minval (lcl, hls)= " << lcl_stats.minval << "; " << hls_stats.minval << std::endl;
     if (lcl_stats.range != hls_stats.range)
       std::cerr << "Range (lcl, hls)= " << lcl_stats.range << "; " << hls_stats.range << std::endl;
-    if (lcl_stats.variance != hls_stats.variance)
+    if (lcl_stats.variance != hls_stats.variance) {
       std::cerr << "Variance (lcl, hls)= " << lcl_stats.variance << "; " << hls_stats.variance << std::endl;
+      return 1;
+    }
 
   }
 

@@ -13,7 +13,7 @@ typedef ap_ufixed<34, 32, AP_TRN, AP_SAT> pt4_t;
 #include "algo_top.h"
 #include "topx.h"
 
-#define NPARTICLES (N_INPUT_LINKS * N_OUT_CANDIDATES)
+#define NPARTICLES (N_ACTIVE_INPUT_LINKS * N_OUT_CANDIDATES)
 
 class Particle_T {
 public:
@@ -41,4 +41,3 @@ struct GEACtrlToken{
 };
 
 #endif
-

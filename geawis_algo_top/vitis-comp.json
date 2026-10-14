@@ -1,0 +1,11 @@
+{
+  "name": "geawis_algo_top",
+  "type": "HLS",
+  "configuration": {
+    "componentType": "HLS",
+    "configFiles": [
+      "hls_config.cfg"
+    ],
+    "work_dir": "algo_top"
+  }
+}
