@@ -6,7 +6,7 @@ if { [ info exists env(CMSSW_BASE) ] } {
 set cflags "-std=c++14 -I${CMSSW_BASE}/src"
 
 # open the project
-open_project -reset algotop_csynth
+open_project -reset algo_top_csynth
 set_top algo_top
 add_files firmware/algo_top.cpp -cflags "${cflags}"
 add_files firmware/topx.cpp -cflags "${cflags}"
