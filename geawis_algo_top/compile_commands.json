@@ -2,10 +2,13 @@
   {
     "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
     "arguments": [
-      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/lnx64/tools/vcxx/libexec/clang++",
+      "--gcc-toolchain=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/tps/lnx64/gcc-8.3.0",
       "-fhls",
-      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
-      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-hls-syn-headers-dir=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/common/technology/autopilot",
+      "-fhlstoplevel=algo_top",
+      "-std=c++17",
+      "-I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
       "-c",
       "/nfs_scratch/dasu/2026-08/geawis/firmware/topx.cpp"
     ],
@@ -14,10 +17,13 @@
   {
     "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
     "arguments": [
-      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/lnx64/tools/vcxx/libexec/clang++",
+      "--gcc-toolchain=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/tps/lnx64/gcc-8.3.0",
       "-fhls",
-      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
-      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-hls-syn-headers-dir=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/common/technology/autopilot",
+      "-fhlstoplevel=algo_top",
+      "-std=c++17",
+      "-I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
       "-c",
       "/nfs_scratch/dasu/2026-08/geawis/firmware/geawis.cpp"
     ],
@@ -26,10 +32,13 @@
   {
     "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
     "arguments": [
-      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/lnx64/tools/vcxx/libexec/clang++",
+      "--gcc-toolchain=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/tps/lnx64/gcc-8.3.0",
       "-fhls",
-      "-hls-syn-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/common/technology/autopilot",
-      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-hls-syn-headers-dir=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/common/technology/autopilot",
+      "-fhlstoplevel=algo_top",
+      "-std=c++17",
+      "-I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
       "-c",
       "/nfs_scratch/dasu/2026-08/geawis/firmware/algo_top.cpp"
     ],
@@ -38,10 +47,12 @@
   {
     "directory": "/nfs_scratch/dasu/2026-08/geawis/geawis_algo_top",
     "arguments": [
-      "/opt/Xilinx/Vitis_HLS/2024.1/vcxx/libexec/clang++",
+      "/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/lnx64/tools/vcxx/libexec/clang++",
+      "--gcc-toolchain=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/tps/lnx64/gcc-8.3.0",
       "-fhls-tb",
-      "-hls-sim-headers-dir=/opt/Xilinx/Vitis_HLS/2024.1/include",
-      "-std=c++17 -I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
+      "-hls-sim-headers-dir=/afs/hep.wisc.edu/cms/sw/Xilinx/2025.2/Vitis/include",
+      "-std=c++17",
+      "-I/cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src",
       "-c",
       "/nfs_scratch/dasu/2026-08/geawis/tb_algo_top.cpp"
     ],

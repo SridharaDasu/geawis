@@ -3,15 +3,13 @@
 #include <cassert>
 #include <random>
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 #include "firmware/geawis.h"
 
 #ifndef NEVENTS
 #define NEVENTS 1000
-#endif
-
-#ifndef INPUT
-#define INPUT "RANDOM"
 #endif
 
 // Setup random number generator
@@ -36,13 +34,13 @@ void getRandomParticles(Particle_T *particles) {
   
 }
 
-void getDataFromFile(Particle_T *particles) {
+void getDataFromFile(const char *fileName, Particle_T *particles) {
   static bool first = true;
   static std::ifstream difs;
   if (first) {
-    difs.open(INPUT);
+    difs.open(fileName);
     if (!difs.is_open()) {
-      std::cerr << "Failed to open " << INPUT << std::endl;
+      std::cerr << "Failed to open " << fileName << std::endl;
       exit(1);
     }
     first = false;
@@ -62,19 +60,41 @@ void getDataFromFile(Particle_T *particles) {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
 
   std::cout << "\n" <<"Start L1 GEA Testbench" << "\n" << std::endl;
 
-  for (int iEvent=0; iEvent<NEVENTS; ++iEvent) {
+  int nevents = NEVENTS;
+  bool fileInput = false;
+  const char *fileName = nullptr;
+  if (argc == 2 || argc == 3) {
+    try {
+      std::size_t parsedLength = 0;
+      nevents = std::stoi(argv[1], &parsedLength);
+      if (parsedLength != std::string(argv[1]).length() || nevents < 0) {
+        throw std::invalid_argument("event count must be a non-negative integer");
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "Invalid event count: " << e.what() << std::endl;
+      return 1;
+    }
+  } else if (argc != 1) {
+    std::cerr << "Usage: " << argv[0] << " [nevents [input-file]]" << std::endl;
+    return 1;
+  }
+  if (argc == 3) {
+    fileInput = true;
+    fileName = argv[2];
+  }
+
+  for (int iEvent=0; iEvent<nevents; ++iEvent) {
     std::cout << "\n" << "Event " << iEvent << " Start" << std::endl;
 
     Particle_T particles[NPARTICLES];
-    if (strcmp(INPUT, "RANDOM") == 0) {
+    if (fileInput) {
+      getDataFromFile(fileName, particles);
+    } else {
       getRandomParticles(particles);
-    }
-    else {
-      getDataFromFile(particles);
     }
 
     GEACtrlToken token_d;

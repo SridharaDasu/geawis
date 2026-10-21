@@ -49,21 +49,27 @@ cd geawis
 
 ### 2. Run csim to verify that the testbench "simulation" agrees with the code used to make the "RTL".
 
-In this step we run csim using vitis. Compiling requires access to datatypes.h, which is in CMSSW area. If you are working on a machine with /cvmfs it should work fine. As for the access to Vitis / Vivado, you need to execute the local settings script. The example below works on Wisconsin lab machines. You could run with random input or with a file input. The data generation is in the subdirectory "data".
+In this step we run C simulation using Vitis 2025.2. Compiling requires access to datatypes.h, which is in CMSSW area. If you are working on a machine with /cvmfs it should work fine. Load the local CMS and Vitis environment, then invoke `vitis-run`. `GEAWIS_NEVENTS` sets the number of events; `GEAWIS_INPUT` optionally selects a CSV input file. Leave `GEAWIS_INPUT` unset to use random input.
 ```
-source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
-vitis_hls -f run_csim.tcl "{nevents=1000}"
-vitis_hls -f run_csim.tcl "{nevents=1000, input=data/minbias.csv}"
+source ./setup.sh
+GEAWIS_NEVENTS=1000 vitis-run --mode hls --tcl run_csim.tcl
+GEAWIS_NEVENTS=1000 GEAWIS_INPUT=data/minbias.csv vitis-run --mode hls --tcl run_csim.tcl
 ```
 To directly test the fixed-point statistics against the software reference, run:
 ```
-vitis-run --mode hls --tcl run_csim_geawis.tcl
+GEAWIS_NEVENTS=1000 vitis-run --mode hls --tcl run_csim_geawis.tcl
+GEAWIS_NEVENTS=1000 GEAWIS_INPUT=data/minbias.csv vitis-run --mode hls --tcl run_csim_geawis.tcl
 ```
+The same environment variables configure C/RTL co-simulation:
+```
+GEAWIS_NEVENTS=1000 GEAWIS_INPUT=data/minbias.csv vitis-run --mode hls --tcl run_cosim.tcl
+```
+`run_csim_topx.tcl` and `run_csynth.tcl` do not read event or input data, so these variables do not affect them.
 
 ### 3. Generate "RTL"
 
 This generates the firmware RTL, which is to be used with the core framework to produce a bitfile eventually.
 ```
-source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
-vitis_hls -f run_csynth.tcl
+source ./setup.sh
+vitis-run --mode hls --tcl run_csynth.tcl
 ```
