@@ -7,6 +7,8 @@
 *.pyc
 *.root
 *.csv
+*.err
+*.bit
 __pycache__
 *.dump
 geawis_*
@@ -18,3 +20,4 @@ tb_topx
 tb_algo_top
 build
 submodules
+images
