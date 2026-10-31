@@ -29,7 +29,9 @@ EventAnalysis::EventAnalysis(string inFileName) : fileName(inFileName) {
   histograms["NStableParticles"] = new TH1F("NStableParticles", "Number of Stable Particles", 50, 0., 10000.);
   histograms["NVisibleParticles"] = new TH1F("NVisibleParticles", "Number of Visible Particles", 50, 0., 10000.);
   histograms["NInvisibleParticles"] = new TH1F("NInvisibleParticles", "Number of Invisible Particles", 10, 0., 10.);
-  histograms["RecoPhotonET"] = new TH1F("RecoPhotonET", "Transverse energy of reconstructed photons (GeV)", 100, 0., 100.);
+  histograms["RecoParticleET"] = new TH1F("RecoParticleET", "Transverse energy of reconstructed particles (GeV)", 100, 0., 100.);
+  histograms["RecoParticleEta"] = new TH1F("RecoParticleEta", "Eta of reconstructed particles", 100, -7., 7.);
+  histograms["RecoParticlePhi"] = new TH1F("RecoParticlePhi", "Phi energy of reconstructed particles", 100, -7, 7.);
 
   histograms["PuppiPt"] = new TH1F("PuppiPT", "Transverse energy of particles (GeV)", 4096, 0., 4096.); // 12-bits
   histograms["PuppiEta"] = new TH1F("PuppiEta", "Eta of puppi candidates", 1024, -512., 512.); // 10-bits
@@ -88,9 +90,16 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
     puppi.shoshape = 0;
     if (i < ufs.particleList().size()) {
       TParticle particle(ufs.particleList()[i]);
-      puppi.hwPt = l1ct::Scales::makePtFromFloat(particle.Pt());
-      puppi.hwEta = l1ct::Scales::makeEta(particle.Eta());
-      puppi.hwPhi = l1ct::Scales::makePhi(particle.Phi());
+      double pt = particle.Pt();
+      double eta = particle.Eta();
+      double phi = particle.Phi();
+      if (phi > M_PI) phi -= 2.0 * M_PI;
+      histograms["RecoParticleET"]->Fill(pt);
+      histograms["RecoParticleEta"]->Fill(eta);
+      histograms["RecoParticlePhi"]->Fill(phi);
+      puppi.hwPt = l1ct::Scales::makePtFromFloat(pt);
+      puppi.hwEta = l1ct::Scales::makeEta(eta);
+      puppi.hwPhi = l1ct::Scales::makePhi(phi);
       if (particle.GetPdgCode() == 11) {
 	puppi.pid = l1ct::ParticleID::PID::ELEMINUS;
       }
@@ -131,11 +140,6 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
     histograms["PuppiPID"]->Fill(puppi.pid.bits);
     histograms["PuppiRelIso"]->Fill(puppi.reliso);
     histograms["PuppiShoShape"]->Fill(puppi.shoshape);
-  }
-
-  for(unsigned int i = 0; i < ufs.photonList().size(); i++) {
-    double recoPhotonET = ufs.photonList()[i].Pt();
-    histograms["RecoPhotonET"]->Fill(recoPhotonET);
   }
 
 }
