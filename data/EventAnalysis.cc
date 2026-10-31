@@ -98,8 +98,8 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
       histograms["RecoParticleEta"]->Fill(eta);
       histograms["RecoParticlePhi"]->Fill(phi);
       puppi.hwPt = l1ct::Scales::makePtFromFloat(pt);
-      puppi.hwEta = l1ct::Scales::makeEta(eta);
-      puppi.hwPhi = l1ct::Scales::makePhi(phi);
+      puppi.hwEta = l1ct::Scales::makeGlbEta(eta);
+      puppi.hwPhi = l1ct::Scales::makeGlbPhi(phi);
       if (particle.GetPdgCode() == 11) {
 	puppi.pid = l1ct::ParticleID::PID::ELEMINUS;
       }
