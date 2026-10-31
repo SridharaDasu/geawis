@@ -76,7 +76,12 @@ vitis-run --mode hls --tcl run_csynth.tcl
 
 ### 4. Generate "bit file"
 
-This generates the bitfile, assuming RTL generated is copied to targets/xF13P/rtl/AlgoRTL/.
+One needs to setup submodules directory APx core firmware following Ales Svetek's instructions. 
+
+One needs to copy the generated RTL from step 3 to targets/xF13P/rtl/AlgoRTL/.
+
+One can then run
+
 ```
 source ./setup.sh
 cd targets/xF13P/
