@@ -44,8 +44,8 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
         >> reliso >> comma
         >> shoshape;
       pt_t hwPt = pt;
-      eta_t hwEta = ieta;
-      phi_t hwPhi = iphi;
+      glbeta_t hwEta = ieta;
+      glbphi_t hwPhi = iphi;
       // Find the link id based on hwEta
       float eta = Scales::floatEta(hwEta);
       int iActive = 0;

@@ -18,8 +18,8 @@ typedef ap_ufixed<34, 32, AP_TRN, AP_SAT> pt4_t;
 class Particle_T {
 public:
   pt_t hwPt;
-  eta_t hwEta;
-  phi_t hwPhi;
+  glbeta_t hwEta;
+  glbphi_t hwPhi;
   ParticleID pid;
   rel_iso_t reliso;
   shower_shape_t shoshape;
