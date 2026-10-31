@@ -73,3 +73,13 @@ This generates the firmware RTL, which is to be used with the core framework to 
 source ./setup.sh
 vitis-run --mode hls --tcl run_csynth.tcl
 ```
+
+### 4. Generate "bit file"
+
+This generates the bitfile, assuming RTL generated is copied to targets/xF13P/rtl/AlgoRTL/.
+```
+source ./setup.sh
+cd targets/xF13P/
+make
+```
+The bitfile generation could take several hours.
