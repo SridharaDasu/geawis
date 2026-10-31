@@ -1,7 +1,7 @@
 # L1 TEST PROJECT
 
 <p align="center">
-    <img src=".structure.png" width="50%">
+    <img src=".structure.png" alt="algo_top firmware flow chart" width="80%">
 </p>
 
 ## Overview
