@@ -1,10 +1,10 @@
 # Pythia8 and UltraFastSim based puppi candidate data generator
 
 ## Build instructions
-The main program to use is generateData. You can build it using the following commands.
+The main program to use is generateData. You can build it using the following commands, run from the repository root:
 ```
-source /afs/hep.wisc.edu/cms/sw/Xilinx/Vivado/2023.1/settings64.sh
-source /cvmfs/cms.cern.ch/cmsset_default.sh; pushd /cvmfs/cms.cern.ch/el9_amd64_gcc12/cms/cmssw/CMSSW_15_1_2/src; cmsenv; popd
+source setup.sh
+cd data
 make
 ```
 
