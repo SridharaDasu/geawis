@@ -9,6 +9,9 @@
 *.csv
 *.err
 *.bit
+*.dat
+*.svg
+*.png
 __pycache__
 *.dump
 geawis_*
@@ -18,6 +21,8 @@ data/generateData
 tb_geawis
 tb_topx
 tb_algo_top
+tb_geawis_taus
+tb_geawis_taus_external
 build
 submodules
 images

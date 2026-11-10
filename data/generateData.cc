@@ -31,6 +31,23 @@ int poisson(double mean, Rndm *rndmPtr) {
   return em;
 }
 
+void muckWithMother2(Event &event) {
+  // For descendents of taus, b and c quarks, set the "unused" mother2 to store parent id for efficiency measurements
+  for (int i = 0; i < event.size(); ++i) {
+    Particle& particle = event[i];
+    const int particleId = abs(particle.id());
+    if (particleId != 15) continue;
+    vector<int> descendents = particle.daughterListRecursive();
+    std::cout << particle.id() << " -> ";
+    for (int descendentIndex : descendents) {
+      Particle& descendent = event[descendentIndex];
+      descendent.mothers(descendent.mother1(), particle.id());
+      std::cout << descendent.id() << " ";
+    }
+    std::cout << std::endl;
+  }
+}
+
 int main(int argc, char **argv) {
   // Generator. Process selection. LHC initialization. Histogram.
   Pythia pythia;
@@ -116,6 +133,8 @@ int main(int argc, char **argv) {
     }
 
     // List first few events, both hard process and complete events.
+    muckWithMother2(pythia.event);
+
     if (iEvent < nList) { 
       pythia.info.list();
       pythia.process.list();

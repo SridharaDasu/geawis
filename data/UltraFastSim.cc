@@ -39,7 +39,7 @@ bool UltraFastSim::run(Event &event, Rndm *r) {
       bQuarks.push_back(TParticle(particle.id(),
 				  particle.status(),
 				  particle.mother1(),
-				  i,   // Mother 2 is mostly useless; Store particle location for later navigation of partial pythia list
+				  particle.mother2(),
 				  particle.daughter1(),
 				  particle.daughter2(),
 				  particle.px(), 
@@ -60,7 +60,7 @@ bool UltraFastSim::run(Event &event, Rndm *r) {
       cQuarks.push_back(TParticle(particle.id(),
 				  particle.status(),
 				  particle.mother1(),
-				  i,   // Mother 2 is mostly useless; Store particle location for later navigation of partial pythia list
+				  particle.mother2(),
 				  particle.daughter1(),
 				  particle.daughter2(),
 				  particle.px(), 
@@ -81,7 +81,7 @@ bool UltraFastSim::run(Event &event, Rndm *r) {
       genTaus.push_back(TParticle(particle.id(),
 				  particle.status(),
 				  particle.mother1(),
-				  i,   // Mother 2 is mostly useless; Store particle location for later navigation of partial pythia list
+				  particle.mother2(),
 				  particle.daughter1(),
 				  particle.daughter2(),
 				  particle.px(), 
@@ -103,7 +103,7 @@ bool UltraFastSim::run(Event &event, Rndm *r) {
       visTaus.push_back(TParticle(particle.id(),
 				  particle.status(),
 				  particle.mother1(),
-				  i,   // Mother 2 is mostly useless; Store particle location for later navigation of partial pythia list
+				  particle.mother2(),
 				  particle.daughter1(),
 				  particle.daughter2(),
 				  visP.Px(),
