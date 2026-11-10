@@ -20,6 +20,7 @@ static std::uniform_int_distribution<unsigned int> distrib7FF(0, 0x7FF);
 static std::uniform_int_distribution<unsigned int> distribFFF(0, 0xFFF);
 static std::uniform_int_distribution<unsigned int> distrib3(0, 0x3);
 static std::uniform_int_distribution<unsigned int> distrib6(0, 0x3F);
+static std::uniform_int_distribution<int> distribMotherId(-32768, 32767);
 
 void getRandomParticles(Particle_T *particles) {
 
@@ -29,7 +30,7 @@ void getRandomParticles(Particle_T *particles) {
     particles[i].hwPhi = distrib7FF(gen);
     particles[i].pid.bits = distrib3(gen);
     particles[i].reliso = distrib6(gen);
-    particles[i].shoshape = distrib6(gen);
+    particles[i].motherid = distribMotherId(gen);
   }
   
 }
@@ -56,7 +57,7 @@ void getDataFromFile(const char *fileName, Particle_T *particles) {
       >> particles[i].hwPhi >> comma
       >> particles[i].pid.bits >> comma
       >> particles[i].reliso >> comma
-      >> particles[i].shoshape;
+      >> particles[i].motherid;
   }
 }
 

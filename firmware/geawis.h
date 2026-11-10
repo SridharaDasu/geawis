@@ -4,5 +4,6 @@
 #include "data.h"
 
 void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToken token_d, GEACtrlToken& token_q);
+void geawis_taus(Particle_T in_particles[NPARTICLES], Tau_T taus[NTAUS], GEACtrlToken token_d, GEACtrlToken& token_q);
 
 #endif

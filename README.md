@@ -66,6 +66,23 @@ GEAWIS_NEVENTS=1000 GEAWIS_INPUT=data/minbias.csv vitis-run --mode hls --tcl run
 ```
 `run_csim_topx.tcl` and `run_csynth.tcl` do not read event or input data, so these variables do not affect them.
 
+To run the tau finder over generated CSV events, compile and pass one or more files (the shell expands `data/*.csv`):
+```
+source ./setup.sh
+c++ -I"$XILINX_HLS/include" -I"$CMSSW_BASE/src" -I./ tb_geawis_taus_external.cpp firmware/geawis.cpp -o tb_geawis_taus_external
+./tb_geawis_taus_external data/minbias.csv
+./tb_geawis_taus_external data/*.csv
+```
+The testbench reports each found tau, including its mother particle ID, and summarizes the number of events and taus per input file. It skips stale `*-128.csv` files; events with fewer than `NPARTICLES` rows are zero-padded.
+
+To make the tau histograms and eta-phi plots from its captured output, use the Python script with gnuplot:
+```
+source ./setup.sh
+./tb_geawis_taus_external data/*.csv > tau_run.log
+python3 tau_plots/plot_tau_output.py tau_run.log
+```
+The script writes two SVG dashboards per CSV (all printed taus and those with relative isolation below 10%), each with an eta-phi scatter plot and a mother particle ID histogram, plus histogram data files and the generated gnuplot script in `tau_plots/` by default. The testbench prints taus with pT above 10 and reports relative isolation as cone energy divided by reconstructed tau pT. For another simulation dataset, pass its CSV file(s) to the testbench, capture the output to a log, then pass that log to the Python script. Choose a different plot destination with `--output-dir`.
+
 ### 3. Generate "RTL"
 
 This generates the firmware RTL, which is to be used with the core framework to produce a bitfile eventually.

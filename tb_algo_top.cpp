@@ -30,7 +30,8 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
       link_counts[i] = 0;
     }
     for(unsigned int i = 0; i < N_ACTIVE_INPUT_LINKS * N_INP_CANDIDATES; i++) {
-      uint16_t ievent, iparticle, reliso, shoshape, pid;
+      uint16_t ievent, iparticle, reliso, pid;
+      int16_t motherid;
       float pt;
       int ieta, iphi;
       char comma;
@@ -42,7 +43,7 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
         >> iphi >> comma
         >> pid >> comma
         >> reliso >> comma
-        >> shoshape;
+        >> motherid;
       pt_t hwPt = pt;
       glbeta_t hwEta = ieta;
       glbphi_t hwPhi = iphi;
