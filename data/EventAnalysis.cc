@@ -38,7 +38,7 @@ EventAnalysis::EventAnalysis(string inFileName) : fileName(inFileName) {
   histograms["PuppiPhi"] = new TH1F("PuppiPhi", "Phi of puppi candidates", 1024, -512., 512.); // 10-bits
   histograms["PuppiPID"] = new TH1F("PuppiPID", "PID of puppi candidates", 10, 0., 10.); // 3-bits; but less than 8
   histograms["PuppiRelIso"] = new TH1F("PuppiRelIso", "Relative isolation of puppi candidates", 100, 0., 100.);
-  histograms["PuppiShoShape"] = new TH1F("PuppiShoShape", "Shower shape of puppi candidates", 100, 0., 100.);
+  histograms["PuppiMotherId"] = new TH1F("PuppiMotherId", "Mother particle ID of puppi candidates", 51, -25., 25.);
 
 }
 
@@ -50,7 +50,7 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
   static ofstream dofs;
   if (evt == 0) {
     dofs.open((fileName + ".csv").c_str());
-    dofs << "iEvent, iParticle, pt, eta, phi, pid, reliso, shoshape" << endl;
+    dofs << "iEvent, iParticle, pt, eta, phi, pid, reliso, motherid" << endl;
   }
   evt++;
   
@@ -87,7 +87,7 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
     puppi.hwPhi = 0;
     puppi.pid = l1ct::ParticleID::PID::NONE;
     puppi.reliso = 0;
-    puppi.shoshape = 0;
+    puppi.motherid = 0;
     if (i < ufs.particleList().size()) {
       TParticle particle(ufs.particleList()[i]);
       double pt = particle.Pt();
@@ -100,6 +100,7 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
       puppi.hwPt = l1ct::Scales::makePtFromFloat(pt);
       puppi.hwEta = l1ct::Scales::makeGlbEta(eta);
       puppi.hwPhi = l1ct::Scales::makeGlbPhi(phi);
+      puppi.motherid = particle.GetSecondMother();
       if (particle.GetPdgCode() == 11) {
 	puppi.pid = l1ct::ParticleID::PID::ELEMINUS;
       }
@@ -115,10 +116,10 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
       else if (particle.GetPdgCode() == 22) {
 	puppi.pid = l1ct::ParticleID::PID::PHOTON;
       }
-      else if (particle.GetPdgCode() == 221 | particle.GetPdgCode() == 321 | particle.GetPdgCode() == 2212) {
+      else if (particle.GetPdgCode() == 211 || particle.GetPdgCode() == 321 || particle.GetPdgCode() == 2212) {
 	puppi.pid = l1ct::ParticleID::PID::HADPLUS;
       }
-      else if (particle.GetPdgCode() == -221 | particle.GetPdgCode() == -321 | particle.GetPdgCode() == -2212) {
+      else if (particle.GetPdgCode() == -211 || particle.GetPdgCode() == -321 || particle.GetPdgCode() == -2212) {
 	puppi.pid = l1ct::ParticleID::PID::HADMINUS;
       }
       else {
@@ -133,13 +134,13 @@ void EventAnalysis::processEvent(Event& event, UltraFastSim &ufs) {
       << puppi.hwPhi << ", "
       << puppi.pid.bits << ", "
       << puppi.reliso << ", "
-      << puppi.shoshape << endl;
+      << puppi.motherid << endl;
     histograms["PuppiPt"]->Fill(puppi.hwPt);
     histograms["PuppiEta"]->Fill(puppi.hwEta);
     histograms["PuppiPhi"]->Fill(puppi.hwPhi);
     histograms["PuppiPID"]->Fill(puppi.pid.bits);
     histograms["PuppiRelIso"]->Fill(puppi.reliso);
-    histograms["PuppiShoShape"]->Fill(puppi.shoshape);
+    histograms["PuppiMotherId"]->Fill(puppi.motherid);
   }
 
 }
