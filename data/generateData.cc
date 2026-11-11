@@ -7,6 +7,7 @@ using namespace std;
 using namespace Pythia8; 
 
 #include "UltraFastSim.h"
+#include "TauAncestry.h"
 
 #include "EventAnalysis.h"
 
@@ -29,23 +30,6 @@ int poisson(double mean, Rndm *rndmPtr) {
     t *= rndmPtr->flat();
   } while(t > g);
   return em;
-}
-
-void muckWithMother2(Event &event) {
-  // For descendents of taus, b and c quarks, set the "unused" mother2 to store parent id for efficiency measurements
-  for (int i = 0; i < event.size(); ++i) {
-    Particle& particle = event[i];
-    const int particleId = abs(particle.id());
-    if (particleId != 15) continue;
-    vector<int> descendents = particle.daughterListRecursive();
-    std::cout << particle.id() << " -> ";
-    for (int descendentIndex : descendents) {
-      Particle& descendent = event[descendentIndex];
-      descendent.mothers(descendent.mother1(), particle.id());
-      std::cout << descendent.id() << " ";
-    }
-    std::cout << std::endl;
-  }
 }
 
 int main(int argc, char **argv) {
@@ -132,9 +116,9 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    // List first few events, both hard process and complete events.
-    muckWithMother2(pythia.event);
+    geawis::storeTauAncestorsInMother2(pythia.event);
 
+    // List first few events, both hard process and complete events.
     if (iEvent < nList) { 
       pythia.info.list();
       pythia.process.list();
@@ -159,7 +143,7 @@ int main(int argc, char **argv) {
 	  if(particle.status() > 0) {
 	    if(particle.isVisible()) {
 	      if(particle.pT() > 0.5) {
-		pythia.event.append(particle);
+		geawis::appendUntaggedPileup(pythia.event, particle);
 	      }
 	    }
 	  }

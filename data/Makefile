@@ -19,7 +19,8 @@ $(info FASTJETLDLIBS is $(FASTJETLDLIBS))
 
 ROOTINCLUDES = -I$(ROOTSYS)/include
 $(info ROOTINCLUDES is $(ROOTINCLUDES))
-ROOTLDLIBS = $(shell $(ROOTSYS)/bin/root-config --cflags --glibs) -lEG
+# Keep the C++ standard in CXXFLAGS; ROOT's --cflags would override it.
+ROOTLDLIBS = $(shell $(ROOTSYS)/bin/root-config --glibs) -lEG
 $(info ROOTLDLIBS is $(ROOTLDLIBS))
 
 XILINXINCLUDES=-I$(XILINX_HLS)/include
@@ -33,11 +34,18 @@ all : generateData
 	@echo Built $@
 
 clean :
-	rm -rf generateData *.a *.o
+	rm -rf generateData tb_tau_ancestry *.a *.o
 
-generateData : generateData.cc libGEAWisData.a
-	$(LD) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS) $^ $(LDLIBS) -o $@
+generateData : generateData.cc libGEAWisData.a TauAncestry.h
+	$(LD) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS) $(filter %.cc %.a,$^) $(LDLIBS) -o $@
 	@echo Built $@
+
+tb_tau_ancestry : tb_tau_ancestry.cpp libGEAWisData.a TauAncestry.h
+	$(LD) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS) $(filter %.cpp %.a,$^) $(LDLIBS) -o $@
+
+.PHONY: test-tau-ancestry
+test-tau-ancestry : tb_tau_ancestry
+	./tb_tau_ancestry hllhc-z-tau.cards 1000 25
 
 libGEAWisData.a : libGEAWisData.a(EventAnalysis.o) libGEAWisData.a(UltraFastSim.o)
 	@echo Built $@

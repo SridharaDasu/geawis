@@ -21,6 +21,48 @@ struct ParticleRow {
   int motherid;
 };
 
+// Diagnostic only: in a tau-pair sample, +/-15 identifies the two ancestors.
+// Count each event/ancestor once so extra seeds cannot inflate recovery.
+struct TauSeedDiagnostics {
+  unsigned long long visible = 0;
+  unsigned long long charged = 0;
+  unsigned long long seeded = 0;
+  unsigned long long eligible = 0;
+  unsigned long long recovered = 0;
+  unsigned long long duplicateOutputs = 0;
+};
+
+void updateSeedDiagnostics(const Particle_T particles[NPARTICLES],
+                           const Tau_T taus[NTAUS], TauSeedDiagnostics &stats) {
+  for (int sign = -1; sign <= 1; sign += 2) {
+    const int ancestor = sign * 15;
+    pt2_t visiblePt = 0;
+    bool hasChargedSeed = false;
+    for (int i = 0; i < NPARTICLES; ++i) {
+      if (particles[i].hwPt == 0 || particles[i].motherid != ancestor) continue;
+      visiblePt += particles[i].hwPt;
+      hasChargedSeed |= particles[i].pid.charged();
+    }
+    if (visiblePt == 0) continue;
+    ++stats.visible;
+    if (hasChargedSeed) ++stats.charged;
+    unsigned outputs = 0;
+    bool hasOutput = false;
+    for (int i = 0; i < NTAUS; ++i) {
+      if (taus[i].valid && taus[i].motherid == ancestor) {
+        hasOutput = true;
+        if (taus[i].hwPt > 10) ++outputs;
+      }
+    }
+    if (hasChargedSeed && hasOutput) ++stats.seeded;
+    if (outputs > 1) stats.duplicateOutputs += outputs - 1;
+    if (visiblePt > 10 && hasChargedSeed) {
+      ++stats.eligible;
+      if (outputs > 0) ++stats.recovered;
+    }
+  }
+}
+
 template <typename T>
 bool parseField(const std::string &field, T &value) {
   std::istringstream input(field);
@@ -67,7 +109,8 @@ void clearParticles(Particle_T particles[NPARTICLES]) {
 }
 
 bool runEvent(const std::string &fileName, long long eventNumber,
-              Particle_T particles[NPARTICLES], unsigned long long &tauCount) {
+              Particle_T particles[NPARTICLES], unsigned long long &tauCount,
+              TauSeedDiagnostics &seedStats) {
   Tau_T taus[NTAUS];
   GEACtrlToken token_d;
   GEACtrlToken token_q;
@@ -84,6 +127,7 @@ bool runEvent(const std::string &fileName, long long eventNumber,
     return false;
   }
 
+  updateSeedDiagnostics(particles, taus, seedStats);
   for (int i = 0; i < NTAUS; ++i) {
     if (!taus[i].valid || taus[i].hwPt <= 10) continue;
     const double tauPt = taus[i].hwPt.to_double();
@@ -117,6 +161,7 @@ bool processFile(const char *fileName) {
   unsigned particlesInEvent = 0;
   unsigned long long eventCount = 0;
   unsigned long long tauCount = 0;
+  TauSeedDiagnostics seedStats;
 
   while (std::getline(input, line)) {
     ++lineNumber;
@@ -138,7 +183,7 @@ bool processFile(const char *fileName) {
                   << ": event rows are not in increasing order\n";
         return false;
       }
-      if (!runEvent(fileName, currentEvent, particles, tauCount)) return false;
+      if (!runEvent(fileName, currentEvent, particles, tauCount, seedStats)) return false;
       ++eventCount;
       clearParticles(particles);
       particlesInEvent = 0;
@@ -168,10 +213,19 @@ bool processFile(const char *fileName) {
     std::cerr << fileName << ": no event rows found\n";
     return false;
   }
-  if (!runEvent(fileName, currentEvent, particles, tauCount)) return false;
+  if (!runEvent(fileName, currentEvent, particles, tauCount, seedStats)) return false;
   ++eventCount;
   std::cout << fileName << ": processed " << eventCount << " events, found "
             << tauCount << " taus\n";
+  if (seedStats.visible > 0) {
+    std::cout << fileName << ": seed-tag recovery (no isolation cut): "
+              << seedStats.recovered << '/' << seedStats.eligible
+              << " with charged input and visible pT > 10; "
+              << seedStats.seeded << '/' << seedStats.charged
+              << " charged tags seeded without pT cut, " << seedStats.visible
+              << " visible tags; " << seedStats.duplicateOutputs
+              << " duplicate tagged outputs\n";
+  }
   return true;
 }
 

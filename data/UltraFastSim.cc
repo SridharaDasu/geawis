@@ -94,8 +94,8 @@ bool UltraFastSim::run(Event &event, Rndm *r) {
 				  particle.tProd())
 			);
       TLorentzVector visP;
-      for(int k = particle.daughter1(); k < particle.daughter2(); k++) {
-	if(abs(event[k].isVisible())) {
+      for (int k : particle.daughterListRecursive()) {
+	if (event[k].isFinal() && event[k].isVisible()) {
 	  TLorentzVector kP(event[k].px(), event[k].py(), event[k].pz(), event[k].e());
 	  visP += kP;
 	}

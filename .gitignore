@@ -19,6 +19,7 @@ geawis_*
 topx_*
 algo_top_*
 data/generateData
+data/tb_tau_ancestry
 tb_geawis
 tb_topx
 tb_algo_top

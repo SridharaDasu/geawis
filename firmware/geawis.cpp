@@ -61,9 +61,33 @@ void geawis_stats(Particle_T in_particles[NPARTICLES], Stats &stats, GEACtrlToke
 
 namespace {
 
-constexpr int kSignalConeRadiusSquared = 1182;
+// Try a wider collection cone first, then recover compact cores when extra
+// tracks spoil its charge or multiplicity. Radii are 0.20, 0.15 and 0.10.
+constexpr int kNTauCones = 3;
+constexpr int kSignalConeRadiusSquared[kNTauCones] = {2101, 1182, 528};
 constexpr int kIsolationConeRadiusSquared = 8405;
-constexpr int kPhiPeriod = 1440;
+constexpr int kIsolationConeMaxOffset = 91;
+static_assert(kIsolationConeMaxOffset * kIsolationConeMaxOffset <=
+                  kIsolationConeRadiusSquared &&
+              (kIsolationConeMaxOffset + 1) * (kIsolationConeMaxOffset + 1) >
+                  kIsolationConeRadiusSquared, "invalid isolation bounding box");
+constexpr int kPhiPeriod = Scales::INTPHI_TWOPI;
+
+struct TauCluster {
+  unsigned ptRaw;
+  int ptEtaOffset;
+  int ptPhiOffset;
+  unsigned nProngs;
+  unsigned nPhotons;
+  int charge;
+  bool rejected;
+  unsigned chargedHadronIso;
+  unsigned electronIso;
+  unsigned muonIso;
+  unsigned photonIso;
+  unsigned neutralHadronIso;
+  ap_uint<NPARTICLES> constituents;
+};
 
 bool isChargedHadron(const Particle_T &particle) {
   return particle.pid.bits == ParticleID::HADPLUS ||
@@ -94,16 +118,21 @@ int particleCharge(const Particle_T &particle) {
   return 0;
 }
 
-int deltaR2(const Particle_T &a, const Particle_T &b) {
-  const int deltaEta = a.hwEta.to_int() - b.hwEta.to_int();
-  int deltaPhi = a.hwPhi.to_int() - b.hwPhi.to_int();
+int wrappedDeltaPhi(int phi, int seedPhi) {
+  int deltaPhi = phi - seedPhi;
   if (deltaPhi > kPhiPeriod / 2) deltaPhi -= kPhiPeriod;
   if (deltaPhi < -kPhiPeriod / 2) deltaPhi += kPhiPeriod;
-  return deltaEta * deltaEta + deltaPhi * deltaPhi;
+  return deltaPhi;
 }
 
-pt2_t particlePt(const Particle_T &particle) {
-  return particle.hwPt;
+pt2_t ptFromRaw(unsigned rawPt) {
+  // Input pT has two fractional bits; the output has four. Even the sum
+  // of NPARTICLES maximum-pT inputs fits in both unsigned and pt2_t.
+  static_assert(NPARTICLES * 16383ULL < (1ULL << 22), "pT sum exceeds 22 bits");
+  pt2_t pt = 0;
+  pt.range() = rawPt << (pt2_t::width - pt2_t::iwidth -
+                         (pt_t::width - pt_t::iwidth));
+  return pt;
 }
 
 void clearTau(Tau_T &tau) {
@@ -134,158 +163,210 @@ void geawis_taus(Particle_T in_particles[NPARTICLES], Tau_T taus[NTAUS],
 #pragma HLS interface ap_none port=in_particles
 #pragma HLS interface ap_none port=taus
 
+  // Decode once per event rather than repeatedly converting fixed-point
+  // fields for every seed/constituent pair.
+  int eta[NPARTICLES], phi[NPARTICLES], chargeOf[NPARTICLES];
+  unsigned ptRaw[NPARTICLES];
+  bool hadron[NPARTICLES], electron[NPARTICLES], muon[NPARTICLES];
+  bool photon[NPARTICLES];
+#pragma HLS ARRAY_PARTITION variable=eta complete
+#pragma HLS ARRAY_PARTITION variable=phi complete
+#pragma HLS ARRAY_PARTITION variable=chargeOf complete
+#pragma HLS ARRAY_PARTITION variable=ptRaw complete
+#pragma HLS ARRAY_PARTITION variable=hadron complete
+#pragma HLS ARRAY_PARTITION variable=electron complete
+#pragma HLS ARRAY_PARTITION variable=muon complete
+#pragma HLS ARRAY_PARTITION variable=photon complete
+  for (int i = 0; i < NPARTICLES; ++i) {
+#pragma HLS UNROLL
+    eta[i] = in_particles[i].hwEta.to_int();
+    phi[i] = in_particles[i].hwPhi.to_int();
+    ptRaw[i] = in_particles[i].hwPt.range().to_uint();
+    chargeOf[i] = particleCharge(in_particles[i]);
+    hadron[i] = isChargedHadron(in_particles[i]);
+    electron[i] = isElectron(in_particles[i]);
+    muon[i] = isMuon(in_particles[i]);
+    photon[i] = in_particles[i].pid.bits == ParticleID::PHOTON;
+  }
+
   for (int i = 0; i < NTAUS; ++i) {
 #pragma HLS UNROLL
     clearTau(taus[i]);
   }
 
+  ap_uint<NPARTICLES> tauConstituents[NTAUS];
+#pragma HLS ARRAY_PARTITION variable=tauConstituents complete
+  for (int i = 0; i < NTAUS; ++i) {
+#pragma HLS UNROLL
+    tauConstituents[i] = 0;
+  }
+
   int nTaus = 0;
   for (int seed = 0; seed < NPARTICLES; ++seed) {
-    const bool leptonSeed =
-        isElectron(in_particles[seed]) || isMuon(in_particles[seed]);
-    if (!isChargedHadron(in_particles[seed]) && !leptonSeed) continue;
+    const bool leptonSeed = electron[seed] || muon[seed];
+    if (ptRaw[seed] == 0 || (!hadron[seed] && !leptonSeed)) continue;
 
-    const pt2_t seedPt = particlePt(in_particles[seed]);
-    int signalPtEtaOffset = 0;
-    int signalPtPhiOffset = 0;
-    unsigned signalPtRaw = 0;
-    pt2_t signalPt = 0;
-    unsigned nProngs = 0;
-    int charge = 0;
-    bool leptonVeto = false;
-    unsigned nPhotons = 0;
-    bool hasHigherPtSignalProng = false;
-    bool hasOtherSignalTrack = false;
-    pt2_t chargedHadronIso = 0;
-    pt2_t electronIso = 0;
-    pt2_t muonIso = 0;
-    pt2_t photonIso = 0;
-    pt2_t neutralHadronIso = 0;
-
+    TauCluster clusters[kNTauCones] = {};
+#pragma HLS ARRAY_PARTITION variable=clusters complete
     for (int particle = 0; particle < NPARTICLES; ++particle) {
 #pragma HLS LOOP_FLATTEN off
-      const int dr2 = deltaR2(in_particles[seed], in_particles[particle]);
-      if (dr2 < kSignalConeRadiusSquared) {
-        if (isChargedHadron(in_particles[particle])) {
-          if (leptonSeed) {
-            hasOtherSignalTrack = true;
-          } else {
-            const pt2_t pt = particlePt(in_particles[particle]);
-            ++nProngs;
-            charge += particleCharge(in_particles[particle]);
-            signalPt += pt;
-            const int rawPt =
-                in_particles[particle].hwPt.range().to_uint();
-            signalPtRaw += rawPt;
-            signalPtEtaOffset +=
-                (in_particles[particle].hwEta.to_int() -
-                 in_particles[seed].hwEta.to_int()) *
-                rawPt;
-            int deltaPhi = in_particles[particle].hwPhi.to_int() -
-                           in_particles[seed].hwPhi.to_int();
-            if (deltaPhi > kPhiPeriod / 2) deltaPhi -= kPhiPeriod;
-            if (deltaPhi < -kPhiPeriod / 2) deltaPhi += kPhiPeriod;
-            signalPtPhiOffset += deltaPhi * rawPt;
-            if (particle != seed &&
-                (pt > seedPt || (pt == seedPt && particle < seed))) {
-              hasHigherPtSignalProng = true;
+      if (ptRaw[particle] == 0) continue;
+      const int deltaEta = eta[particle] - eta[seed];
+      const int deltaPhi = wrappedDeltaPhi(phi[particle], phi[seed]);
+      if (deltaEta < -kIsolationConeMaxOffset ||
+          deltaEta > kIsolationConeMaxOffset ||
+          deltaPhi < -kIsolationConeMaxOffset ||
+          deltaPhi > kIsolationConeMaxOffset) continue;
+      const int dr2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+      if (dr2 > kIsolationConeRadiusSquared) continue;
+
+      // Share the geometry calculation across the three bounded hypotheses.
+      for (int cone = 0; cone < kNTauCones; ++cone) {
+#pragma HLS UNROLL
+        TauCluster &cluster = clusters[cone];
+        if (cluster.rejected) continue;
+        if (dr2 < kSignalConeRadiusSquared[cone]) {
+          if (hadron[particle]) {
+            if (leptonSeed || ++cluster.nProngs > 3 ||
+                ptRaw[particle] > ptRaw[seed] ||
+                (ptRaw[particle] == ptRaw[seed] && particle < seed)) {
+              cluster.rejected = true;
+              continue;
             }
-          }
-        } else if (isElectron(in_particles[particle]) ||
-                   isMuon(in_particles[particle])) {
-          if (particle == seed && leptonSeed) {
-            ++nProngs;
-            charge += particleCharge(in_particles[particle]);
-            signalPt += particlePt(in_particles[particle]);
-            const int rawPt =
-                in_particles[particle].hwPt.range().to_uint();
-            signalPtRaw += rawPt;
-          } else {
-            leptonVeto = true;
-            if (leptonSeed) hasOtherSignalTrack = true;
-            if (leptonSeed && particle != seed &&
-                (particlePt(in_particles[particle]) > seedPt ||
-                 (particlePt(in_particles[particle]) == seedPt &&
-                  particle < seed))) {
-              hasHigherPtSignalProng = true;
+            cluster.charge += chargeOf[particle];
+          } else if (electron[particle] || muon[particle]) {
+            if (particle != seed) {
+              cluster.rejected = true;
+              continue;
             }
+            ++cluster.nProngs;
+            cluster.charge += chargeOf[particle];
+          } else if (photon[particle]) {
+            ++cluster.nPhotons;
+          } else {
+            continue;
           }
-        } else if (in_particles[particle].pid.bits == ParticleID::PHOTON) {
-          signalPt += particlePt(in_particles[particle]);
-          const int rawPt = in_particles[particle].hwPt.range().to_uint();
-          signalPtRaw += rawPt;
-          signalPtEtaOffset +=
-              (in_particles[particle].hwEta.to_int() -
-               in_particles[seed].hwEta.to_int()) *
-              rawPt;
-          int deltaPhi = in_particles[particle].hwPhi.to_int() -
-                         in_particles[seed].hwPhi.to_int();
-          if (deltaPhi > kPhiPeriod / 2) deltaPhi -= kPhiPeriod;
-          if (deltaPhi < -kPhiPeriod / 2) deltaPhi += kPhiPeriod;
-          signalPtPhiOffset += deltaPhi * rawPt;
-          ++nPhotons;
-        }
-      } else if (dr2 <= kIsolationConeRadiusSquared) {
-        const pt2_t pt = particlePt(in_particles[particle]);
-        if (isChargedHadron(in_particles[particle])) {
-          chargedHadronIso += pt;
-        } else if (isElectron(in_particles[particle])) {
-          electronIso += pt;
-        } else if (isMuon(in_particles[particle])) {
-          muonIso += pt;
-        } else if (in_particles[particle].pid.bits == ParticleID::PHOTON) {
-          photonIso += pt;
-        } else if (in_particles[particle].pid.bits == ParticleID::HADZERO) {
-          neutralHadronIso += pt;
+          const int rawPt = ptRaw[particle];
+          cluster.ptRaw += rawPt;
+          cluster.ptEtaOffset += deltaEta * rawPt;
+          cluster.ptPhiOffset += deltaPhi * rawPt;
+          cluster.constituents[particle] = 1;
+        } else {
+          // Particles outside the selected core retain their isolation
+          // contribution; no isolation selection is applied here.
+          const unsigned rawPt = ptRaw[particle];
+          if (hadron[particle]) {
+            cluster.chargedHadronIso += rawPt;
+          } else if (electron[particle]) {
+            cluster.electronIso += rawPt;
+          } else if (muon[particle]) {
+            cluster.muonIso += rawPt;
+          } else if (photon[particle]) {
+            cluster.photonIso += rawPt;
+          } else {
+            cluster.neutralHadronIso += rawPt;
+          }
         }
       }
+      bool anyActive = false;
+      for (int cone = 0; cone < kNTauCones; ++cone) {
+#pragma HLS UNROLL
+        anyActive |= !clusters[cone].rejected;
+      }
+      if (!anyActive) break;
     }
 
-    if (hasHigherPtSignalProng || leptonVeto ||
-        hasOtherSignalTrack ||
-        (nProngs != 1 && nProngs != 3) ||
-        (nProngs == 3 && charge != 1 && charge != -1)) {
-      continue;
+    int selectedCone = -1;
+    for (int cone = 0; cone < kNTauCones; ++cone) {
+#pragma HLS UNROLL
+      const TauCluster &cluster = clusters[cone];
+      if (selectedCone < 0 && !cluster.rejected &&
+          (cluster.nProngs == 1 || cluster.nProngs == 3) &&
+          (cluster.charge == 1 || cluster.charge == -1)) {
+        selectedCone = cone;
+      }
     }
+    if (selectedCone < 0) continue;
+    const TauCluster &cluster = clusters[selectedCone];
 
     Tau_T candidate;
     clearTau(candidate);
-    candidate.hwPt = signalPt;
-    int tauEta = in_particles[seed].hwEta.to_int();
-    int tauPhi = in_particles[seed].hwPhi.to_int();
-    if (signalPtRaw > 0) {
-      tauEta += signalPtEtaOffset / static_cast<int>(signalPtRaw);
-      tauPhi += signalPtPhiOffset / static_cast<int>(signalPtRaw);
-    }
+    candidate.hwPt = ptFromRaw(cluster.ptRaw);
+    int tauEta = eta[seed];
+    int tauPhi = phi[seed];
+    tauEta += cluster.ptEtaOffset / static_cast<int>(cluster.ptRaw);
+    tauPhi += cluster.ptPhiOffset / static_cast<int>(cluster.ptRaw);
     if (tauPhi >= kPhiPeriod / 2) tauPhi -= kPhiPeriod;
     if (tauPhi < -kPhiPeriod / 2) tauPhi += kPhiPeriod;
     candidate.hwEta = tauEta;
     candidate.hwPhi = tauPhi;
     candidate.motherid = in_particles[seed].motherid;
-    candidate.charge = charge;
-    candidate.nProngs = nProngs;
-    candidate.nPhotons = nPhotons;
+    candidate.charge = cluster.charge;
+    candidate.nProngs = cluster.nProngs;
+    candidate.nPhotons = cluster.nPhotons;
     candidate.valid = true;
-    candidate.chargedHadronIso = chargedHadronIso;
-    candidate.electronIso = electronIso;
-    candidate.muonIso = muonIso;
-    candidate.photonIso = photonIso;
-    candidate.neutralHadronIso = neutralHadronIso;
+    candidate.chargedHadronIso = ptFromRaw(cluster.chargedHadronIso);
+    candidate.electronIso = ptFromRaw(cluster.electronIso);
+    candidate.muonIso = ptFromRaw(cluster.muonIso);
+    candidate.photonIso = ptFromRaw(cluster.photonIso);
+    candidate.neutralHadronIso = ptFromRaw(cluster.neutralHadronIso);
     candidate.totalIso = candidate.chargedHadronIso + candidate.electronIso +
                          candidate.muonIso + candidate.photonIso +
                          candidate.neutralHadronIso;
 
+    // Alternate cone sizes can produce overlapping hypotheses even when
+    // both seeds are local maxima in their own cores. Keep the higher-pT
+    // hypothesis and never count the same signal constituent twice.
+    bool overlap[NTAUS];
+#pragma HLS ARRAY_PARTITION variable=overlap complete
+    bool blocked = false;
+    bool hasOverlap = false;
+    for (int i = 0; i < NTAUS; ++i) {
+#pragma HLS UNROLL
+      overlap[i] = i < nTaus &&
+                   (tauConstituents[i] & cluster.constituents) != 0;
+      if (overlap[i]) {
+        hasOverlap = true;
+        if (taus[i].hwPt >= candidate.hwPt) blocked = true;
+      }
+    }
+    if (blocked) continue;
+    if (hasOverlap) {
+      int kept = 0;
+      for (int i = 0; i < NTAUS; ++i) {
+        if (i < nTaus && !overlap[i]) {
+          taus[kept] = taus[i];
+          tauConstituents[kept] = tauConstituents[i];
+          ++kept;
+        }
+      }
+      nTaus = kept;
+      for (int i = 0; i < NTAUS; ++i) {
+#pragma HLS UNROLL
+        if (i >= nTaus) {
+          clearTau(taus[i]);
+          tauConstituents[i] = 0;
+        }
+      }
+    }
+
     int insertAt = 0;
-    while (insertAt < nTaus && taus[insertAt].hwPt >= candidate.hwPt) {
-      ++insertAt;
+    for (int i = 0; i < NTAUS; ++i) {
+#pragma HLS UNROLL
+      if (i < nTaus && taus[i].hwPt >= candidate.hwPt) ++insertAt;
     }
     if (insertAt >= NTAUS) continue;
 
     const int newCount = nTaus < NTAUS ? nTaus + 1 : NTAUS;
-    for (int i = newCount - 1; i > insertAt; --i) {
-      taus[i] = taus[i - 1];
+    for (int i = NTAUS - 1; i > 0; --i) {
+#pragma HLS UNROLL
+      if (i > insertAt && i < newCount) {
+        taus[i] = taus[i - 1];
+        tauConstituents[i] = tauConstituents[i - 1];
+      }
     }
     taus[insertAt] = candidate;
+    tauConstituents[insertAt] = cluster.constituents;
     nTaus = newCount;
   }
 
