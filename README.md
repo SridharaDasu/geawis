@@ -37,6 +37,29 @@ The goal is to implement a Global Event Analysis (GEA) system that digests these
 
 This block directly receives 144 PUPPI candidates and control token, and produces a Stats object, which contains average, variance, etc. This is just a test block which needs to be replaced with a useful algorithm.
 
+### Alternative algorithm: LGN classifier
+
+`algo_top` can run a trained **logic gate network (LGN)** classifier instead of `StatsAlgo`, selected at runtime via the `use_lgn` input (`0` = stats, `1` = LGN; they are mutually exclusive, never both computed). This is meant as a template for swapping in a real ML-based algorithm.
+
+Model training and compilation (PyTorch -> differentiable logic gate network -> a boolean circuit) happens entirely outside this repo, in [ligerlac/ctl2-lgn](https://github.com/ligerlac/ctl2-lgn). That project consumes the same 144-puppi-candidate CSVs this repo's `data/generateData` produces, and hands back a `circuit.json` (gate-level DAG) + `thresholds.csv` (per-feature thermometer-encoding thresholds) directory, e.g. `lgn_stuff/LogicModelTiny_20261102-180844/`.
+
+Turning that handoff into firmware is a single codegen step:
+```
+python3 scripts/generate_lgn_firmware.py lgn_stuff/<model_dir>
+```
+This (re)generates `firmware/lgn.cpp` in full: the thresholds table, the boolean gate network (transcribed straight from `circuit.json`), and `lgn_classify()` tying them together. It's a committed, generated output -- re-run the script and re-commit after retraining. `firmware/lgn.h` is the one hand-written, stable file: just the `lgn_classify()` declaration `algo_top.cpp` calls.
+
+To check the generated circuit is bit-exact with the reference C model the training pipeline emits:
+```
+source ./setup.sh
+vitis-run --mode hls --tcl run_csim_lgn.tcl
+```
+To exercise the LGN path through the full `algo_top` csim, set `GEAWIS_USE_LGN=1`:
+```
+GEAWIS_NEVENTS=1000 GEAWIS_USE_LGN=1 vitis-run --mode hls --tcl run_csim.tcl
+```
+`run_csynth.tcl` builds whichever algorithm is wired in regardless of `use_lgn` (it's a runtime input, not a build-time switch) -- both `geawis_stats` and `lgn_classify` are always synthesized into `algo_top`.
+
 ## Simulation
 The setup is trivial - it simply generates a dataset with random values distributed uniformly and sends it to Vitis.
 
