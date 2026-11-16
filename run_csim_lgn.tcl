@@ -14,7 +14,7 @@ set_top lgn_circuit
 
 add_files -tb tb_lgn.cpp -cflags "${cflags}"
 add_files -tb lgn_stuff/LogicModelTiny_20261102-180844/circuit.c
-add_files firmware/lgn_circuit.cpp -cflags "${cflags}"
+add_files firmware/lgn.cpp -cflags "${cflags}"
 
 # Solution
 open_solution -reset "solution"

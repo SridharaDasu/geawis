@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Generate HLS firmware sources from a compiled LGN (logic gate network) model.
+"""Generate firmware/lgn.cpp from a compiled LGN (logic gate network) model.
 
 Takes the artifacts produced by the standalone training/compilation workflow
-(torchlogix2 -> a LogicModel*_<timestamp>/ directory under lgn_stuff/, containing
-circuit.json and thresholds.csv) and emits the generated half of the firmware
-integration:
+(https://github.com/ligerlac/ctl2-lgn -> a LogicModel*_<timestamp>/ directory
+under lgn_stuff/, containing circuit.json and thresholds.csv) and emits the
+entire generated implementation as a single file:
 
-  firmware/lgn_circuit.h    - lgn_circuit() declaration + I/O size constants
-  firmware/lgn_circuit.cpp  - the boolean gate network + output group-sums,
-                              transcribed straight from circuit.json
-  firmware/lgn_thresholds.h - the per-feature thermometer-encoding thresholds
+  firmware/lgn.cpp - thresholds table, particle binarization, the boolean
+                     gate network + output group-sums (transcribed straight
+                     from circuit.json), and lgn_classify() tying them
+                     together. Everything here is generated, not hand-edited;
+                     re-run this script after retraining/recompiling the
+                     model.
 
-These three files are generated, not hand-edited; re-run this script after
-retraining/recompiling the model. The hand-written wrapper that binarizes
-Particle_T fields and calls lgn_circuit() lives in firmware/lgn.h/lgn.cpp and
-is NOT touched by this script.
+firmware/lgn.h declares only the one stable public entry point
+(lgn_classify()) and is NOT touched by this script.
 
 Usage:
   python3 scripts/generate_lgn_firmware.py lgn_stuff/LogicModelTiny_20261102-180844
@@ -59,42 +59,19 @@ def node_ref(node_id, n_inputs):
     return f"in[{node_id}]" if node_id < n_inputs else f"g{node_id}"
 
 
-def generate_circuit_header(circuit, out_path):
+def render_gate_network(circuit):
     n_inputs = circuit["n_inputs"]
     n_outputs = circuit["output_shape"][0]
-    out_path.write_text(f"""#ifndef GEAWIS_LGN_CIRCUIT_H
-#define GEAWIS_LGN_CIRCUIT_H
-
-// {HEADER_NOTE}
-
-#include "ap_int.h"
-
-#define N_LGN_INPUTS {n_inputs}
-#define N_LGN_OUTPUTS {n_outputs}
-
-// out[k] is the raw (unnormalized) group-sum logit for class k -- the sum of
-// up to 86 boolean circuit taps feeding that class, each contributing 0 or 1.
-// Fits in ap_uint<7> (max observed group size well under 128). Classification
-// is argmax(out[0..N_LGN_OUTPUTS-1]); the "tau" normalization applied in the
-// original circuit.c (a constant positive scale shared by all classes) is
-// omitted here since it does not change the argmax.
-void lgn_circuit(bool in[N_LGN_INPUTS], ap_uint<7> out[N_LGN_OUTPUTS]);
-
-#endif
-""")
-
-
-def generate_circuit_source(circuit, out_path):
-    n_inputs = circuit["n_inputs"]
     gates = circuit["gates"]
     sum_nodes = circuit["sum_nodes"]
 
     lines = []
-    lines.append('#include "lgn_circuit.h"')
+    lines.append(f"#define N_LGN_INPUTS {n_inputs}")
+    lines.append(f"#define N_LGN_OUTPUTS {n_outputs}")
     lines.append("")
-    lines.append(f"// {HEADER_NOTE}")
-    lines.append(f"// n_inputs={n_inputs}  n_gates={len(gates)}  n_outputs={len(sum_nodes)}")
-    lines.append("")
+    lines.append("// Internal to this file -- not part of lgn.h's public contract. Kept as a")
+    lines.append("// plain (non-static) function only so tb_lgn.cpp can regression-test it in")
+    lines.append("// isolation against lgn_stuff/.../circuit.c; nothing else should call it.")
     lines.append("void lgn_circuit(bool in[N_LGN_INPUTS], ap_uint<7> out[N_LGN_OUTPUTS]) {")
     lines.append("#pragma HLS ARRAY_PARTITION variable=in complete")
     lines.append("#pragma HLS ARRAY_PARTITION variable=out complete")
@@ -123,10 +100,10 @@ def generate_circuit_source(circuit, out_path):
             lines.append(f"  out[{k}] += {terms};")
 
     lines.append("}")
-    out_path.write_text("\n".join(lines) + "\n")
+    return "\n".join(lines), n_inputs, len(gates), n_outputs
 
 
-def generate_thresholds_header(thresholds_rows, out_path, n_particles, n_features_per_particle):
+def render_thresholds_table(thresholds_rows, n_particles, n_features_per_particle):
     n_rows = len(thresholds_rows)
     n_bits = len(thresholds_rows[0])
     expected = n_particles * n_features_per_particle
@@ -136,34 +113,86 @@ def generate_thresholds_header(thresholds_rows, out_path, n_particles, n_feature
             f"({n_particles} particles x {n_features_per_particle} features)"
         )
 
-    lines = []
-    lines.append("#ifndef GEAWIS_LGN_THRESHOLDS_H")
-    lines.append("#define GEAWIS_LGN_THRESHOLDS_H")
-    lines.append("")
-    lines.append(f"// {HEADER_NOTE}")
-    lines.append("//")
-    lines.append("// Row layout: LGN_THRESHOLDS[particle_idx * LGN_N_FEATURES_PER_PARTICLE + feature_idx][bit]")
-    lines.append("// feature_idx assumed 0=hwPt, 1=hwEta, 2=hwPhi (Particle_T's declared field order --")
-    lines.append("// confirm against the training pipeline's data.py before relying on this for physics")
-    lines.append("// Thresholds are ascending per row; thermometer-encoded bit = (value > threshold).")
-    lines.append("")
-    lines.append(f"#define LGN_N_PARTICLES {n_particles}")
-    lines.append(f"#define LGN_N_FEATURES_PER_PARTICLE {n_features_per_particle}")
-    lines.append(f"#define LGN_N_THRESHOLD_BITS {n_bits}")
-    lines.append("")
     def literal(v):
         s = f"{v:.10g}"
         if "." not in s and "e" not in s and "E" not in s:
             s += ".0"
         return s + "f"
 
+    lines = []
+    lines.append(f"#define LGN_N_PARTICLES {n_particles}")
+    lines.append(f"#define LGN_N_FEATURES_PER_PARTICLE {n_features_per_particle}")
+    lines.append(f"#define LGN_N_THRESHOLD_BITS {n_bits}")
+    lines.append("")
+    lines.append("// Row layout: LGN_THRESHOLDS[particle_idx * LGN_N_FEATURES_PER_PARTICLE + feature_idx][bit]")
+    lines.append("// feature_idx assumed 0=hwPt, 1=hwEta, 2=hwPhi (Particle_T's declared field order --")
+    lines.append("// confirm against the training pipeline's data.py before relying on this for physics).")
+    lines.append("// Thresholds are ascending per row; thermometer-encoded bit = (value > threshold).")
     lines.append(f"static const float LGN_THRESHOLDS[{n_rows}][{n_bits}] = {{")
     for row in thresholds_rows:
         vals = ", ".join(literal(v) for v in row)
         lines.append(f"  {{{vals}}},")
     lines.append("};")
+    return "\n".join(lines), n_rows, n_bits
+
+
+def generate_lgn_source(circuit, thresholds_rows, out_path, n_particles, n_features_per_particle):
+    gate_network, n_inputs, n_gates, n_outputs = render_gate_network(circuit)
+    thresholds_table, n_rows, n_bits = render_thresholds_table(
+        thresholds_rows, n_particles, n_features_per_particle
+    )
+
+    lines = []
+    lines.append('#include "lgn.h"')
     lines.append("")
-    lines.append("#endif")
+    lines.append(f"// {HEADER_NOTE}")
+    lines.append(f"// n_inputs={n_inputs}  n_gates={n_gates}  n_outputs={n_outputs}")
+    lines.append("")
+    lines.append(thresholds_table)
+    lines.append("")
+    lines.append(gate_network)
+    lines.append("")
+    lines.append("// Thermometer-encodes one particle's (hwPt, hwEta, hwPhi) against the")
+    lines.append("// per-feature threshold rows into N_LGN_INPUTS booleans.")
+    lines.append("static void binarize_particles(Particle_T in_particles[NPARTICLES], bool bits[N_LGN_INPUTS]) {")
+    lines.append("#pragma HLS ARRAY_PARTITION variable=bits complete")
+    lines.append("  for (int p = 0; p < NPARTICLES; ++p) {")
+    lines.append("#pragma HLS UNROLL")
+    lines.append("    float features[LGN_N_FEATURES_PER_PARTICLE] = {")
+    lines.append("      (float)in_particles[p].hwPt,")
+    lines.append("      (float)in_particles[p].hwEta,")
+    lines.append("      (float)in_particles[p].hwPhi,")
+    lines.append("    };")
+    lines.append("    for (int f = 0; f < LGN_N_FEATURES_PER_PARTICLE; ++f) {")
+    lines.append("#pragma HLS UNROLL")
+    lines.append("      int row = p * LGN_N_FEATURES_PER_PARTICLE + f;")
+    lines.append("      for (int b = 0; b < LGN_N_THRESHOLD_BITS; ++b) {")
+    lines.append("#pragma HLS UNROLL")
+    lines.append("        bits[row * LGN_N_THRESHOLD_BITS + b] = features[f] > LGN_THRESHOLDS[row][b];")
+    lines.append("      }")
+    lines.append("    }")
+    lines.append("  }")
+    lines.append("}")
+    lines.append("")
+    lines.append("void lgn_classify(Particle_T in_particles[NPARTICLES], ap_uint<2> &lgn_class) {")
+    lines.append("#pragma HLS ARRAY_PARTITION variable=in_particles complete")
+    lines.append("")
+    lines.append("  bool bits[N_LGN_INPUTS];")
+    lines.append("  ap_uint<7> scores[N_LGN_OUTPUTS];")
+    lines.append("#pragma HLS ARRAY_PARTITION variable=bits complete")
+    lines.append("#pragma HLS ARRAY_PARTITION variable=scores complete")
+    lines.append("")
+    lines.append("  binarize_particles(in_particles, bits);")
+    lines.append("  lgn_circuit(bits, scores);")
+    lines.append("")
+    lines.append("  ap_uint<2> best = 0;")
+    lines.append("  for (int k = 1; k < N_LGN_OUTPUTS; ++k) {")
+    lines.append("#pragma HLS UNROLL")
+    lines.append("    if (scores[k] > scores[best]) best = k;")
+    lines.append("  }")
+    lines.append("  lgn_class = best;")
+    lines.append("}")
+
     out_path.write_text("\n".join(lines) + "\n")
 
 
@@ -180,13 +209,11 @@ def main():
         thresholds_rows = [[float(x) for x in row] for row in csv.reader(f)]
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    generate_circuit_header(circuit, args.out_dir / "lgn_circuit.h")
-    generate_circuit_source(circuit, args.out_dir / "lgn_circuit.cpp")
-    generate_thresholds_header(
-        thresholds_rows, args.out_dir / "lgn_thresholds.h",
+    generate_lgn_source(
+        circuit, thresholds_rows, args.out_dir / "lgn.cpp",
         args.n_particles, args.n_features_per_particle,
     )
-    print(f"Wrote lgn_circuit.h, lgn_circuit.cpp, lgn_thresholds.h to {args.out_dir}/", file=sys.stderr)
+    print(f"Wrote lgn.cpp to {args.out_dir}/", file=sys.stderr)
 
 
 if __name__ == "__main__":

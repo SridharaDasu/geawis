@@ -12,7 +12,6 @@ add_files firmware/algo_top.cpp -cflags "${cflags}"
 add_files firmware/topx.cpp -cflags "${cflags}"
 add_files firmware/geawis.cpp -cflags "${cflags}"
 add_files firmware/lgn.cpp -cflags "${cflags}"
-add_files firmware/lgn_circuit.cpp -cflags "${cflags}"
 
 # reset the solution
 open_solution -reset "solution"

@@ -47,7 +47,7 @@ Turning that handoff into firmware is a single codegen step:
 ```
 python3 scripts/generate_lgn_firmware.py lgn_stuff/<model_dir>
 ```
-This (re)generates `firmware/lgn_circuit.h`, `firmware/lgn_circuit.cpp` (the boolean gate network, transcribed straight from `circuit.json`) and `firmware/lgn_thresholds.h`. These three files are committed, generated outputs -- re-run the script and re-commit after retraining. The hand-written glue (`firmware/lgn.h`/`lgn.cpp`) binarizes `Particle_T` against the thresholds and calls the generated `lgn_circuit()`; it is not touched by the codegen script.
+This (re)generates `firmware/lgn.cpp` in full: the thresholds table, the boolean gate network (transcribed straight from `circuit.json`), and `lgn_classify()` tying them together. It's a committed, generated output -- re-run the script and re-commit after retraining. `firmware/lgn.h` is the one hand-written, stable file: just the `lgn_classify()` declaration `algo_top.cpp` calls.
 
 To check the generated circuit is bit-exact with the reference C model the training pipeline emits:
 ```

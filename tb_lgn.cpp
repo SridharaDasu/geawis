@@ -1,12 +1,23 @@
-// Regression test for firmware/lgn_circuit.cpp: checks it is bit-exact with
-// lgn_stuff/LogicModelTiny_20261102-180844/circuit.c, the reference C
-// implementation emitted directly by the training/compilation pipeline that
-// scripts/generate_lgn_firmware.py reads circuit.json from. This does not
-// test binarize_particles()/lgn_classify() against real physics -- only that
-// the gate network was transcribed correctly (see lgn.h for the caveat on
-// the assumed input feature ordering).
+// Regression test for the gate network generated into firmware/lgn.cpp:
+// checks it is bit-exact with lgn_stuff/LogicModelTiny_20261102-180844/
+// circuit.c, the reference C implementation emitted directly by the
+// training/compilation pipeline that scripts/generate_lgn_firmware.py reads
+// circuit.json from. This does not test binarize_particles()/lgn_classify()
+// against real physics -- only that the gate network was transcribed
+// correctly (see lgn.h for the caveat on the assumed input feature
+// ordering).
 #include <iostream>
-#include "firmware/lgn_circuit.h"
+#include "ap_int.h"
+
+// Sizes for this specific compiled model (lgn_stuff/LogicModelTiny_20261102-
+// 180844/circuit.json); keep in sync with it if the model directory above
+// changes. lgn_circuit() itself is generated into firmware/lgn.cpp -- it has
+// no header since it's not part of the firmware's public API (lgn.h/
+// lgn_classify() is), so this testbench forward-declares it directly to
+// exercise it in isolation.
+#define N_LGN_INPUTS 1728
+#define N_LGN_OUTPUTS 3
+extern void lgn_circuit(bool in[N_LGN_INPUTS], ap_uint<7> out[N_LGN_OUTPUTS]);
 
 // Reference implementation, compiled alongside this testbench (see
 // run_csim_lgn.tcl); not synthesized.
