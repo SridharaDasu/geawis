@@ -4,6 +4,8 @@
 #include <random>
 #include <cmath>
 #include <iomanip>
+#include <cstdlib>
+#include <string>
 
 #include "firmware/data.h"
 #include "firmware/topx.h"
@@ -121,6 +123,8 @@ int main(int argc, char** argv) {
     if (argc == 2 || argc == 3) {
       nevents = atoi(argv[1]);
     }
+    const char* use_lgn_env = getenv("GEAWIS_USE_LGN");
+    ap_uint<1> use_lgn = (use_lgn_env != nullptr && std::string(use_lgn_env) == "1") ? 1 : 0;
     bool fileInput = false;
     char *fileName;
     std::ifstream difs;
@@ -155,20 +159,28 @@ int main(int argc, char** argv) {
         for (int i = 0; i < N_OUTPUT_LINKS; i++) {
           link_out[i] = 0; // Zero the output links
         }
-        algo_top(link_in, link_out);
+        algo_top(link_in, use_lgn, link_out);
       }
       for (int i = 0; i < N_OUTPUT_LINKS; i++) {
-        pt_t average = link_out[i].range(13, 0);
-        pt_t maximum = link_out[i].range(27, 14);
-        pt_t minimum = link_out[i].range(41, 28);
-        pt_t variance = link_out[i].range(55, 42);
+        ap_uint<1> mode = link_out[i][63];
         std::cout << "Event = " << event
-                  << "; raw = " << std::hex << link_out[i]
-                  << "; average = " << std::dec << average
-                  << "; max = " << maximum
-                  << "; min = " << minimum
-                  << "; variance = " << variance
-                  << std::endl;
+                  << "; raw = " << std::hex << link_out[i] << std::dec;
+        if (mode) {
+          ap_uint<2> lgn_class = link_out[i].range(1, 0);
+          std::cout << "; mode = lgn; lgn_class = " << lgn_class << std::endl;
+        }
+        else {
+          pt_t average = link_out[i].range(13, 0);
+          pt_t maximum = link_out[i].range(27, 14);
+          pt_t minimum = link_out[i].range(41, 28);
+          pt_t variance = link_out[i].range(55, 42);
+          std::cout << "; mode = stats"
+                    << "; average = " << average
+                    << "; max = " << maximum
+                    << "; min = " << minimum
+                    << "; variance = " << variance
+                    << std::endl;
+        }
       }
     }
   } catch (const std::exception& e) {

@@ -3,6 +3,7 @@
 #include "topx.h"
 #include "data.h"
 #include "geawis.h"
+#include "lgn.h"
 
 void processInputLinks(
   ap_uint<2> link_group,
@@ -46,21 +47,32 @@ void processInputLinks(
   }
 }
 
-void processOutputLinks(Stats &stats, ap_uint<64> link_out[N_OUTPUT_LINKS]) {
+// Mode is tagged in bit 63 so a downstream consumer can tell which encoding
+// a given word uses. use_lgn==0 keeps the original stats-only bit layout
+// (bits 55:0) unchanged; use_lgn==1 only ever writes bits 1:0 (lgn_class is
+// undefined/unused in that mode's output, matching the mutually-exclusive
+// call in algo_top()).
+void processOutputLinks(Stats &stats, ap_uint<2> lgn_class, ap_uint<1> use_lgn, ap_uint<64> link_out[N_OUTPUT_LINKS]) {
 #pragma HLS ARRAY_PARTITION variable=link_out complete dim=0
 #pragma HLS PIPELINE II=1
   for (int i = 0; i < N_OUTPUT_LINKS; i++) {
 #pragma HLS UNROLL
     ap_uint<64> packed = 0;
-    packed.range(13, 0) = stats.average;
-    packed.range(27, 14) = stats.maxval;
-    packed.range(41, 28) = stats.minval;
-    packed.range(55, 42) = stats.variance;
+    if (use_lgn) {
+      packed.range(1, 0) = lgn_class;
+    }
+    else {
+      packed.range(13, 0) = stats.average;
+      packed.range(27, 14) = stats.maxval;
+      packed.range(41, 28) = stats.minval;
+      packed.range(55, 42) = stats.variance;
+    }
+    packed[63] = use_lgn;
     link_out[i] = packed;
   }
 }
 
-void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_LINKS]){
+void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<1> use_lgn, ap_uint<64> link_out[N_OUTPUT_LINKS]){
 #pragma HLS ARRAY_PARTITION variable=link_in complete dim=0
 #pragma HLS ARRAY_PARTITION variable=link_out complete dim=0
 #pragma HLS PIPELINE II=1
@@ -68,6 +80,7 @@ void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_
 
   Particle_T in_particles[NPARTICLES];
   Stats stats;
+  ap_uint<2> lgn_class;
   GEACtrlToken d = {0, true, true};
   GEACtrlToken q = {0, false, false};
   static ap_uint<6> clock_tick = 0;
@@ -76,8 +89,13 @@ void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_
   processInputLinks(tm18_counter, link_in, in_particles);
   clock_tick++;
   if (clock_tick == N_INP_CANDIDATES) {
-    geawis_stats(in_particles, stats, d, q);
-    processOutputLinks(stats, link_out);
+    if (use_lgn) {
+      lgn_classify(in_particles, lgn_class);
+    }
+    else {
+      geawis_stats(in_particles, stats, d, q);
+    }
+    processOutputLinks(stats, lgn_class, use_lgn, link_out);
     clock_tick = 0;
     if (tm18_counter == 2) {
       tm18_counter = 0;

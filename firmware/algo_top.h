@@ -16,6 +16,10 @@ static const ap_uint<6> TM18_01[N_ACTIVE_INPUT_LINKS] = { 0,  1,  2,  3,  4,  5,
 static const ap_uint<6> TM18_07[N_ACTIVE_INPUT_LINKS] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 30, 31};
 static const ap_uint<6> TM18_13[N_ACTIVE_INPUT_LINKS] = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 
-void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<64> link_out[N_OUTPUT_LINKS]);
+// use_lgn selects which once-per-batch algorithm drives the output word:
+// 0 = geawis_stats (default, bit-compatible with the pre-LGN output
+// encoding), 1 = the LGN classifier. They are mutually exclusive, not both
+// computed -- see processOutputLinks() for the resulting bit layout.
+void algo_top(ap_uint<64> link_in[N_INPUT_LINKS], ap_uint<1> use_lgn, ap_uint<64> link_out[N_OUTPUT_LINKS]);
 
 #endif
