@@ -4,10 +4,44 @@
 #include <random>
 #include <cmath>
 #include <iomanip>
+#include <string>
 
 #include "firmware/data.h"
 #include "firmware/topx.h"
 #include "firmware/algo_top.h"
+
+void writeTestVectors(const ap_uint<64> link_in[N_INPUT_LINKS],
+                      const ap_uint<64> link_out[N_OUTPUT_LINKS],
+                      const char* fileName) {
+  static std::ofstream inputLinks(std::string(fileName) + ".inp");
+  static std::ofstream outputLinks(std::string(fileName) + ".out");
+  static unsigned long long wordCount = 0;
+  if (!inputLinks.is_open() || !outputLinks.is_open()) {
+    throw std::ios_base::failure("Failed to open input_links.txt or output_links.txt");
+  }
+
+  auto writeLinks = [](std::ostream& out, const ap_uint<64>* links,
+                       int nLinks, unsigned long long count) {
+    if (count == 0) {
+      out << "#\n#WordCnt";
+      for (int i = 0; i < nLinks; ++i) {
+        out << "            LINK_" << std::setfill('0') << std::setw(2) << i
+            << std::setfill(' ') << "   ";
+      }
+      out << "\n#BeginData\n";
+    }
+    out << "0x" << std::hex << std::uppercase << std::setfill('0')
+        << std::setw(4) << count;
+    for (int i = 0; i < nLinks; ++i) {
+      out << "    0x" << std::setw(16) << links[i].to_uint64();
+    }
+    out << std::dec << std::nouppercase << std::setfill(' ') << '\n';
+  };
+
+  writeLinks(inputLinks, link_in, N_INPUT_LINKS, wordCount);
+  writeLinks(outputLinks, link_out, N_OUTPUT_LINKS, wordCount);
+  ++wordCount;
+}
 
 void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> link_in[N_INPUT_LINKS]) {
   static std::ifstream difs;
@@ -118,16 +152,23 @@ void getDataFromFile(const char* fileName, int event, int counter, ap_uint<64> l
 int main(int argc, char** argv) {
   try {
     // Get nevents from argument
-    int nevents = 10;
-    if (argc == 2 || argc == 3) {
+    const int MAX_BUFFERED_EVENTS = 18;
+    int nevents = MAX_BUFFERED_EVENTS;
+    if (argc >= 2) {
       nevents = atoi(argv[1]);
     }
     bool fileInput = false;
     char *fileName;
     std::ifstream difs;
-    if (argc == 3) {
+    if (argc >= 3) {
       fileInput = true;
       fileName = argv[2];
+    }
+    bool tvFiles = false;
+    char *tvName;
+    if (argc == 4) {
+      tvFiles = true;
+      tvName = argv[3];
     }
     // Setup random number generator
     static std::random_device rd;
@@ -157,6 +198,9 @@ int main(int argc, char** argv) {
           link_out[i] = 0; // Zero the output links
         }
         algo_top(link_in, link_out);
+        if(tvFiles && event < MAX_BUFFERED_EVENTS) {
+          writeTestVectors(link_in, link_out, tvName);
+        }
       }
       for (int i = 0; i < N_OUTPUT_LINKS; i++) {
         pt_t average = link_out[i].range(13, 0);
