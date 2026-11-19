@@ -1,0 +1,2 @@
+BUFFER OPERATION COLUMN BC0_DELAY    LOOP_MODE
+R108     static_playback  1    10         loop

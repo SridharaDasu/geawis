@@ -13,6 +13,8 @@
 *.dat
 *.svg
 *.png
+*.inp
+*.out
 __pycache__
 *.dump
 geawis_*
